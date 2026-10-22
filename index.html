@@ -1,0 +1,1453 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cube Editor</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1013">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg:#0f1013; --s1:#16171b; --s2:#1c1d22; --s3:#23252b; --line:#2b2d34; --line2:#383b43;
+    --fg:#eeeae3; --dim:#a39d92; --faint:#6f6a62;
+    --acc:#d4b06a; --acc-ink:#1f1708; --warn:#d6a06f; --bad:#ff6b6b;
+    --vol:#d4b06a; --ir:#7fb6d8; --fx:#a996d9; --tone:#d6a06f;
+    --r:14px;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui,"Segoe UI",Roboto,sans-serif; }
+  button,input,select,textarea { font:inherit; color:inherit; }
+  button { cursor:pointer; background:var(--s2); border:1px solid var(--line2); border-radius:10px; padding:8px 12px; }
+  button:hover:not(:disabled) { border-color:var(--acc); } button:disabled { opacity:.38; cursor:default; }
+  button.pri { background:var(--acc); color:var(--acc-ink); border-color:var(--acc); font-weight:700; }
+  button.ghost { background:transparent; border-color:transparent; } button.ghost:hover:not(:disabled) { background:var(--s2); border-color:var(--line2); }
+  button.icon { padding:8px 10px; min-width:38px; }
+  input[type=text], input[type=search], input[type=number], textarea, select { background:var(--s2); border:1px solid var(--line2); border-radius:10px; padding:8px 10px; outline:none; min-width:0; }
+  input:focus, textarea:focus, select:focus, button:focus-visible { border-color:var(--acc); outline:none; box-shadow:0 0 0 3px #d4b06a26; }
+  .muted { color:var(--dim); } .tiny { font-size:12px; }
+
+  /* ---------- Cabeçalho ---------- */
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 16px; background:#0f1013ee; backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  .brand { font-weight:800; letter-spacing:.6px; font-size:16px; margin-right:6px; } .brand b { color:var(--acc); }
+  .seg { display:inline-flex; background:var(--s1); border:1px solid var(--line2); border-radius:11px; padding:3px; gap:2px; }
+  .seg button { border:0; background:transparent; padding:6px 12px; border-radius:8px; font-weight:700; color:var(--dim); }
+  .seg button.on { background:var(--acc); color:var(--acc-ink); }
+  .seglab { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+  .pill { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border:1px solid var(--line2); border-radius:99px; font-size:12px; color:var(--dim); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--bad); } .pill.on .dot { background:var(--acc); box-shadow:0 0 8px var(--acc); } .pill.demo .dot { background:var(--warn); }
+  .grow { flex:1; }
+  .libbtn { display:none; }
+  .devdirty { color:var(--warn); font-size:12px; }
+
+  /* ---------- Layout ---------- */
+  .app { display:grid; grid-template-columns:330px minmax(0,1fr); gap:16px; max-width:1320px; margin:0 auto; padding:16px; }
+  .lib { position:sticky; top:72px; align-self:start; height:calc(100vh - 88px); display:flex; flex-direction:column; background:var(--s1); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; }
+  .scrim { display:none; }
+  @media (max-width:900px) {
+    .app { grid-template-columns:minmax(0,1fr); padding:12px; }
+    .lib { position:fixed; top:0; left:0; bottom:0; width:min(370px,90vw); height:auto; z-index:40; border-radius:0 var(--r) var(--r) 0; transform:translateX(-105%); transition:transform .22s ease; }
+    .lib.open { transform:none; box-shadow:20px 0 60px #000a; }
+    .scrim.open { display:block; position:fixed; inset:0; background:#0008; z-index:39; }
+    .libbtn { display:inline-flex; }
+  }
+
+  /* ---------- Biblioteca ---------- */
+  .tabs { display:flex; border-bottom:1px solid var(--line); }
+  .tabs button { flex:1; border:0; border-radius:0; background:transparent; padding:12px; font-weight:700; color:var(--dim); border-bottom:2px solid transparent; }
+  .tabs button.on { color:var(--fg); border-bottom-color:var(--acc); }
+  .libtop { padding:12px; display:flex; flex-direction:column; gap:10px; border-bottom:1px solid var(--line); }
+  .libtop[hidden] { display:none; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { padding:4px 10px; border-radius:99px; font-size:12px; background:var(--s2); border:1px solid var(--line2); color:var(--dim); }
+  .chip.on { background:var(--fg); color:var(--bg); border-color:var(--fg); font-weight:700; }
+  .list { flex:1; overflow:auto; padding:6px; }
+  .it { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer; border:1px solid transparent; }
+  .it:hover { background:var(--s2); } .it.on { background:var(--s3); border-color:var(--acc); }
+  .it .sw { width:4px; align-self:stretch; border-radius:4px; background:var(--tc,#6f6a62); flex:none; }
+  .it .tx { flex:1; min-width:0; } .it b { display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .it small { color:var(--dim); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+  .it .n { color:var(--faint); font-variant-numeric:tabular-nums; width:22px; text-align:right; font-size:12px; }
+  .star { border:0; background:transparent; padding:4px; color:var(--faint); font-size:16px; line-height:1; } .star.on { color:#e7c36f; }
+  .mini { display:flex; gap:4px; } .mini button { padding:3px 7px; font-size:12px; border-radius:7px; }
+  .libfoot[hidden] { display:none !important; }
+  .tslots { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); gap:4px; }
+  .tslots button { padding:7px 0; font-weight:800; border-radius:8px; display:flex; flex-direction:column; align-items:center; gap:1px; min-width:0; }
+  .tslots button small { font-size:8px; font-weight:500; color:var(--faint); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px; }
+  .tslots button.on { background:var(--ir); color:#0c1a26; border-color:var(--ir); } .tslots button.on small { color:#0c1a26cc; }
+  .iri { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; cursor:pointer; border:1px solid transparent; }
+  .iri:hover { background:var(--s2); } .iri.in { border-color:var(--ir); background:var(--s3); }
+  .iri .tx { flex:1; min-width:0; } .iri b { display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .iri small { color:var(--dim); font-size:11px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .iri .go { font-size:12px; padding:5px 9px; border-radius:8px; flex:none; }
+  .iri svg { flex:none; opacity:.9; }
+  .warnbadge { color:var(--warn); }
+  .libfoot { display:flex; gap:6px; flex-wrap:wrap; padding:10px 12px; border-top:1px solid var(--line); }
+  .libfoot button { flex:1 1 auto; font-size:13px; }
+  .empty { color:var(--dim); padding:18px 12px; font-size:13px; text-align:center; }
+  .grp { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--faint); padding:10px 10px 4px; }
+
+  /* ---------- Editor ---------- */
+  .pbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:var(--s1); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; }
+  .pname { font-size:22px; font-weight:800; background:transparent !important; border-color:transparent !important; padding:4px 6px !important; flex:1 1 220px; }
+  .pname:hover { border-color:var(--line2) !important; }
+  .badge { font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:var(--s3); color:var(--dim); }
+  .badge.mod { background:#d6a06f22; color:var(--warn); } .badge.ok { background:#d4b06a1a; color:var(--acc); }
+  .pmeta { display:flex; gap:8px; flex:1 1 100%; flex-wrap:wrap; }
+  .pmeta input { flex:1 1 160px; font-size:13px; }
+  .pact { display:flex; gap:6px; flex-wrap:wrap; flex:1 1 100%; }
+  .navbtn { font-size:16px; padding:6px 14px; }
+
+  .chain { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:14px 2px; }
+  .chain .lbl { font-size:11px; color:var(--faint); letter-spacing:1px; text-transform:uppercase; margin-right:4px; }
+  .blk { display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:9px; background:var(--s1); border:1px solid var(--line2); font-size:12px; font-weight:700; letter-spacing:.5px; color:var(--faint); }
+  .blk i { width:8px; height:8px; border-radius:50%; background:var(--line2); }
+  .blk.on { color:var(--fg); border-color:var(--cc); } .blk.on i { background:var(--cc); box-shadow:0 0 8px var(--cc); }
+  .arrow { color:var(--faint); }
+  .blk small { font-weight:500; letter-spacing:0; color:var(--dim); font-size:11px; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+  .card { min-width:0; background:var(--s1); border:1px solid var(--line); border-radius:var(--r); padding:14px 16px 16px; position:relative; }
+  .card::before { content:""; position:absolute; left:16px; right:16px; top:0; height:2px; background:var(--cc); border-radius:2px; opacity:.85; }
+  .card.c-vol { grid-column:span 1; } .card.c-fx { grid-column:span 2; } .card.c-ir, .card.c-tone { grid-column:span 3; }
+  @media (max-width:760px) { .cards { grid-template-columns:minmax(0,1fr); } .card.c-vol, .card.c-fx, .card.c-ir, .card.c-tone { grid-column:auto; } }
+  .ch { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .ch h3 { margin:0; font-size:12px; letter-spacing:1.4px; text-transform:uppercase; }
+  .ch .sub { color:var(--dim); font-size:12px; }
+  .card.off .body { opacity:.25; filter:grayscale(1); pointer-events:none; }
+  .tg { margin-left:auto; position:relative; width:44px; height:24px; flex:none; display:inline-block; }
+  .tg input { appearance:none; -webkit-appearance:none; width:100%; height:100%; margin:0; border-radius:99px; background:var(--s3); border:1px solid var(--line2); cursor:pointer; }
+  .tg input:checked { background:var(--cc); border-color:var(--cc); }
+  .tg span { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .18s; pointer-events:none; }
+  .tg input:checked + span { transform:translateX(20px); }
+  .knobs { display:flex; justify-content:space-evenly; flex-wrap:wrap; gap:8px 4px; padding-top:4px; }
+
+  .knob { display:flex; flex-direction:column; align-items:center; gap:2px; width:96px; user-select:none; outline:none; }
+  .kw { position:relative; touch-action:none; cursor:ns-resize; border-radius:50%; }
+  .knob:focus-visible .kw { box-shadow:0 0 0 3px color-mix(in srgb, var(--cc) 40%, transparent); }
+  .kw svg { display:block; overflow:visible; }
+  .trk { fill:none; stroke:var(--s3); stroke-width:6; stroke-linecap:round; }
+  .arc { fill:none; stroke:var(--cc); stroke-width:6; stroke-linecap:round; }
+  .cap { fill:url(#capg); stroke:var(--line2); stroke-width:1; }
+  .kdot { fill:#fff; stroke:var(--cc); stroke-width:2.5; }
+  .base { stroke:#fff; stroke-opacity:.75; stroke-width:2; stroke-linecap:round; }
+  .kv { position:absolute; inset:0; margin:auto; width:56%; height:34%; border:0; background:transparent; padding:0; font-weight:800; font-size:17px; font-variant-numeric:tabular-nums; border-radius:8px; }
+  .knob.big .kv { font-size:26px; }
+  .kv:hover { background:#ffffff0d; }
+  .kv input { width:100%; height:100%; text-align:center; padding:0; font-weight:800; font-size:inherit; border-radius:8px; }
+  .kl { font-size:11px; letter-spacing:1.2px; color:var(--dim); text-transform:uppercase; }
+  .kr { font-size:10px; color:var(--faint); }
+  .knob.big { width:150px; }
+  .volwrap { display:flex; justify-content:center; padding-top:4px; }
+
+  .irs { display:grid; grid-template-columns:repeat(9,minmax(0,1fr)); gap:6px; margin:8px 0 10px; }
+  .irs button { padding:12px 0 10px; text-align:center; border-radius:10px; background:var(--s2); display:flex; flex-direction:column; align-items:center; gap:2px; min-width:0; }
+  .irs button b { font-size:16px; } .irs button small { font-size:9px; color:var(--faint); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 3px; }
+  .irs button.on { background:var(--ir); color:#0c1a26; border-color:var(--ir); } .irs button.on small { color:#0c1a26cc; }
+  .irrow { display:flex; gap:8px; align-items:center; } .irrow input { flex:1; }
+  .irsend { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line2); }
+
+  .tonegrid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:14px; align-items:center; }
+  @media (max-width:980px) { .tonegrid { grid-template-columns:minmax(0,1fr); } }
+  svg.eq { width:100%; height:auto; display:block; touch-action:none; }
+  .eqh { cursor:ns-resize; }
+  .note { color:var(--faint); font-size:11px; text-align:center; margin-top:4px; }
+
+  /* ---------- Bancos (slots A/B/C do pedal), modos e controles rápidos ---------- */
+  .ver { font-size:10px; font-weight:500; color:var(--faint); letter-spacing:0; }
+  .banksec { margin-bottom:14px; }
+  .banks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .bank { text-align:left; padding:12px 14px; border-radius:16px; background:var(--s1); border:2px solid var(--line2); display:flex; align-items:center; gap:12px; min-width:0; }
+  .bank b { font-size:28px; line-height:1; color:var(--bc); font-weight:900; }
+  .bank span { font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .bank.on { background:color-mix(in srgb, var(--bc) 22%, var(--s1)); border-color:var(--bc); box-shadow:0 0 0 3px color-mix(in srgb, var(--bc) 30%, transparent); }
+  .kitbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:12px 14px; border-radius:14px; border:1px solid var(--acc); background:color-mix(in srgb, var(--acc) 9%, var(--s1)); font-size:13px; }
+  .kitbar[hidden] { display:none; } .kitbar span { flex:1 1 260px; } .kitbar b { color:var(--acc); }
+  .bankhint { color:var(--dim); font-size:12px; margin:8px 2px 10px; } .bankhint b { color:var(--fg); }
+  .modes { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr)); gap:10px; }
+  .mode { position:relative; text-align:left; padding:14px; border-radius:16px; background:var(--s1); border:2px solid var(--line2); border-left:7px solid var(--bc); min-height:84px; display:flex; flex-direction:column; justify-content:center; gap:4px; }
+  .mode b { font-size:16px; line-height:1.2; } .mode small { color:var(--dim); font-size:11.5px; line-height:1.35; }
+  .mode .mine { position:absolute; top:7px; right:9px; font-style:normal; font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:1px; }
+  .mode.on { background:color-mix(in srgb, var(--bc) 24%, var(--s1)); border-color:var(--bc); } .mode.on small { color:var(--fg); }
+  .mode.add { border-style:dashed; border-left-width:2px; color:var(--dim); align-items:center; text-align:center; font-weight:600; }
+  .quick { margin-top:12px; background:var(--s1); border:1px solid var(--line); border-radius:var(--r); padding:10px 12px; display:flex; flex-direction:column; gap:10px; }
+  .q-irs { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .q-irs .lbl { font-size:11px; color:var(--faint); text-transform:uppercase; letter-spacing:1px; margin-right:2px; }
+  .qir { padding:9px 12px; border-radius:12px; font-size:13px; border-color:var(--line2); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qir.on { background:color-mix(in srgb, var(--bc) 30%, var(--s1)); border-color:var(--bc); color:var(--fg); font-weight:700; }
+  .q-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+  .q-tg { display:flex; gap:6px; } .q-tg button { padding:9px 12px; font-weight:800; border-radius:12px; font-size:12px; color:var(--faint); }
+  .q-tg button.on { background:color-mix(in srgb, var(--cc) 26%, var(--s1)); border-color:var(--cc); color:var(--fg); }
+  .q-vol { display:flex; align-items:center; gap:6px; flex:1 1 220px; } .q-vol input { flex:1; accent-color:var(--acc); height:32px; } .q-vol b { min-width:2em; text-align:right; }
+  .irs button.inbank { border-color:var(--bc); box-shadow:inset 0 -3px 0 var(--bc); }
+  .irs button.outbank:not(.on) { opacity:.5; }
+  .irlegend { font-size:11px; color:var(--dim); margin-top:6px; } .irlegend i { display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--bc); vertical-align:-1px; margin-right:4px; }
+  .bnav { display:none; }
+  @media (max-width:900px) {
+    body { padding-bottom:calc(68px + env(safe-area-inset-bottom)); }
+    .bnav { display:grid; grid-template-columns:repeat(4,1fr); position:fixed; left:0; right:0; bottom:0; z-index:35; background:#0f1013f5; backdrop-filter:blur(8px); border-top:1px solid var(--line); padding:4px 4px calc(4px + env(safe-area-inset-bottom)); }
+    .bnav button { border:0; background:transparent; display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 2px; color:var(--dim); font-size:11px; border-radius:10px; }
+    .bnav button i { font-style:normal; font-size:20px; line-height:1.1; } .bnav button.on { color:var(--acc); background:var(--s2); }
+    .hdr { padding:8px 12px; gap:8px; } .hdr #stageBtn, .hdr #libbtn, .hdr .devdirty { display:none; }
+    .hdr #save { padding:7px 10px; font-size:13px; }
+    body[data-v="play"] #editsec { display:none; }
+    body[data-v="edit"] #modes, body[data-v="edit"] #quick, body[data-v="edit"] #bankhint, body[data-v="edit"] #kitbar { display:none; }
+    .bank { padding:10px; gap:8px; flex-direction:column; align-items:flex-start; } .bank b { font-size:22px; } .bank span { font-size:13px; white-space:normal; }
+    .modes { grid-template-columns:repeat(2,minmax(0,1fr)); } .mode { min-height:92px; padding:12px; } .mode b { font-size:15px; }
+  }
+
+  /* ---------- Palco ---------- */
+  .stage { position:fixed; inset:0; z-index:60; background:radial-gradient(ellipse at top,#2a2416,var(--bg) 60%); display:flex; flex-direction:column; padding:18px; }
+  .stage[hidden] { display:none; }
+  .st-top { display:flex; align-items:center; gap:10px; color:var(--dim); flex-wrap:wrap; }
+  .st-top select { max-width:60vw; }
+  .st-banks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:10px 0 2px; }
+  .st-banks button { padding:14px 10px; border-radius:16px; border:2px solid var(--line2); background:var(--s1); display:flex; align-items:center; justify-content:center; gap:10px; font-weight:800; font-size:clamp(14px,2.4vw,20px); min-width:0; }
+  .st-banks button b { font-size:clamp(22px,4vw,34px); color:var(--bc); line-height:1; } .st-banks button span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .st-banks button.on { background:color-mix(in srgb, var(--bc) 24%, var(--s1)); border-color:var(--bc); box-shadow:0 0 0 3px color-mix(in srgb, var(--bc) 32%, transparent); }
+  .st-now { text-align:center; padding:8px 0 4px; }
+  .st-nowname { font-size:clamp(26px,5vw,56px); font-weight:900; line-height:1.05; letter-spacing:-.5px; overflow-wrap:anywhere; }
+  .st-tag { color:var(--dim); font-size:clamp(13px,1.8vw,17px); min-height:1.4em; }
+  .st-grid { flex:1; min-height:0; overflow:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr)); grid-auto-rows:minmax(104px,1fr); gap:12px; padding:10px 2px; align-content:stretch; }
+  .tile { position:relative; text-align:left; padding:14px 16px; border-radius:20px; background:var(--s1); border:2px solid var(--line2); border-left:9px solid var(--tc,#6f6a62); font-size:clamp(17px,2.1vw,26px); font-weight:800; line-height:1.15; display:flex; flex-direction:column; justify-content:center; gap:4px; overflow:hidden; }
+  .tile small { font-weight:500; font-size:12px; color:var(--dim); line-height:1.3; }
+  .tile .num { position:absolute; top:8px; right:12px; font-size:13px; font-weight:700; color:var(--faint); }
+  .tile:hover { border-color:var(--tc); }
+  .tile.on { background:color-mix(in srgb, var(--tc) 30%, var(--s1)); border-color:var(--tc); box-shadow:0 0 0 3px color-mix(in srgb, var(--tc) 45%, transparent); }
+  .tile.on small { color:var(--fg); }
+  .st-ctl { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding-top:10px; }
+  .st-tg { display:flex; gap:8px; flex-wrap:wrap; }
+  .st-tg button { padding:14px 18px; font-weight:800; border-radius:14px; font-size:15px; min-width:96px; display:flex; flex-direction:column; align-items:center; gap:2px; border-color:var(--line2); color:var(--faint); }
+  .st-tg button small { font-weight:500; font-size:10px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .st-tg button.on { background:color-mix(in srgb, var(--cc) 26%, var(--s1)); border-color:var(--cc); color:var(--fg); }
+  .st-vol { display:flex; align-items:center; gap:8px; flex:1 1 280px; justify-content:flex-end; }
+  .st-vol input { flex:1; max-width:380px; accent-color:var(--acc); height:34px; }
+  .st-vol button { font-size:22px; font-weight:800; min-width:52px; padding:10px; } .st-vol b { min-width:2.4em; text-align:right; font-size:20px; }
+  @media (max-width:600px) { .st-hint { display:none; } .st-tg button { flex:1; min-width:0; } }
+
+  /* ---------- Entrada / avisos ---------- */
+  .landing { position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px; }
+  .landing[hidden] { display:none; }
+  .lcard { max-width:520px; text-align:center; } .lcard h1 { font-size:28px; margin:0 0 8px; } .lcard p { color:var(--dim); }
+  .lcard .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px; } .lcard .row button { padding:12px 18px; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(10px); background:#221c10; border:1px solid var(--acc); padding:9px 16px; border-radius:99px; z-index:80; opacity:0; transition:.2s; pointer-events:none; max-width:92vw; }
+  .toast.show { opacity:1; transform:translateX(-50%); } .toast.bad { border-color:var(--bad); background:#2b1010; }
+  details.log { margin-top:16px; color:var(--faint); font-size:12px; } details.log pre { max-height:140px; overflow:auto; background:#0b0c0f; padding:8px; border-radius:8px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs><radialGradient id="capg" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#2c2e34"/><stop offset="1" stop-color="#141519"/></radialGradient></defs></svg>
+
+<header class="hdr">
+  <button class="libbtn icon" id="libbtn" title="Biblioteca">☰</button>
+  <div class="brand">CUBE<b>EDITOR</b> <span class="ver" id="ver"></span></div>
+  <span class="pill" id="pill"><span class="dot"></span><span id="status">desconectado</span></span>
+  <select id="portSel" hidden></select>
+  <div class="grow"></div>
+  <button class="ghost icon" id="undo" title="Desfazer (Ctrl+Z)">↶</button>
+  <button class="ghost icon" id="redo" title="Refazer (Ctrl+Y)">↷</button>
+  <button id="stageBtn" title="Modo palco: troca rápida de presets">▶ Palco</button>
+  <span class="devdirty" id="devdirty"></span>
+  <button class="pri" id="save" title="Grava A, B e C no aparelho">Gravar no pedal</button>
+</header>
+
+<div class="scrim" id="scrim"></div>
+<div class="app">
+  <aside class="lib" id="lib">
+    <div class="tabs"><button data-t="lib" class="on">Presets</button><button data-t="set">Setlists</button><button data-t="ir">IRs</button></div>
+    <div class="libtop" id="libtop-lib">
+      <input type="search" id="q" placeholder="Buscar por nome, categoria, nota…">
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="libtop" id="libtop-set" hidden>
+      <div style="display:flex;gap:6px"><select id="setSel" style="flex:1"></select><button class="icon" id="setNew" title="Nova setlist">＋</button><button class="icon" id="setRen" title="Renomear">✎</button><button class="icon" id="setDel" title="Apagar setlist">🗑</button></div>
+      <button id="setAdd">＋ Adicionar o preset atual</button>
+    </div>
+    <div class="libtop" id="libtop-ir" hidden>
+      <div class="tiny muted">Toque em um slot-alvo e depois em uma IR para gravá-la no pedal.</div>
+      <div class="tslots" id="tslots"></div>
+      <input type="search" id="irq" placeholder="Buscar IR…">
+      <div class="chips" id="irchips"></div>
+      <div style="display:flex;gap:6px"><button id="irdirbtn" style="flex:1">Importar pasta…</button><button id="irfilesbtn" style="flex:1">Importar arquivos…</button></div>
+      <button id="kitbtn" class="pri" title="Grava 8 IRs escolhidas por medição nos slots 1 a 8, com o volume nivelado">★ Gravar kit sugerido (8 slots)</button>
+      <input type="file" id="irdir" webkitdirectory multiple hidden><input type="file" id="irfiles" accept=".wav,audio/wav" multiple hidden>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="libfoot">
+      <button id="newP">＋ Novo</button>
+      <button id="fromDev" title="Copia os slots A, B e C do pedal para a biblioteca">⇣ Trazer A/B/C</button>
+      <button id="exp">Exportar</button>
+      <button id="imp">Importar</button>
+      <input type="file" id="file" accept=".json" hidden>
+    </div>
+  </aside>
+
+  <main>
+    <section class="banksec" id="banksec">
+      <div class="banks" id="banks"></div>
+      <div class="bankhint" id="bankhint"></div>
+      <div class="kitbar" id="kitbar" hidden></div>
+      <div class="modes" id="modes"></div>
+      <div class="quick" id="quick">
+        <div class="q-irs" id="qirs"></div>
+        <div class="q-row">
+          <div class="q-tg" id="qtg"></div>
+          <div class="q-vol"><button class="icon" id="qvm" title="Volume −4">−</button><input type="range" id="qvol" min="0" max="127" aria-label="Volume"><button class="icon" id="qvp" title="Volume +4">+</button><b id="qvolv"></b></div>
+        </div>
+      </div>
+    </section>
+    <div id="editsec">
+    <div class="pbar">
+      <button class="star" id="pfav" title="Favorito">☆</button>
+      <input type="text" class="pname" id="pname" maxlength="40" aria-label="Nome do preset">
+      <span class="badge" id="pbadge"></span>
+      <button class="navbtn" id="prev" title="Anterior (PageUp)">◀</button>
+      <button class="navbtn" id="next" title="Próximo (PageDown)">▶</button>
+      <div class="pmeta">
+        <input type="text" id="ptag" list="tags" maxlength="24" placeholder="Categoria (ex.: Bossa)">
+        <input type="text" id="pnote" maxlength="140" placeholder="Notas (violão, IR, música…)">
+        <datalist id="tags"></datalist>
+      </div>
+      <div class="pact">
+        <button class="pri" id="psave" title="Ctrl+S">Salvar</button>
+        <button id="psaveas">Salvar como novo</button>
+        <button id="prevert" title="Volta aos valores de quando o preset foi carregado">Voltar ao original</button>
+        <button id="pfromdev" title="Descarta o que foi testado e volta ao que está gravado no slot do pedal">↺ Voltar ao pedal</button>
+        <button class="ghost" id="pdel">Excluir</button>
+      </div>
+    </div>
+
+    <div class="chain" id="chain"></div>
+
+    <div class="cards">
+      <section class="card c-vol" style="--cc:var(--vol)">
+        <div class="ch"><h3>Volume</h3></div>
+        <div class="body volwrap" id="k-vol"></div>
+      </section>
+      <section class="card c-fx" id="c-fx" style="--cc:var(--fx)">
+        <div class="ch"><h3>Efeitos</h3><span class="sub">Space: reverb ← → delay · Mod: chorus ← → trêmolo · Time: repetições do delay</span><label class="tg"><input type="checkbox" id="sw-fx"><span></span></label></div>
+        <div class="body knobs" id="k-fx"></div>
+      </section>
+      <section class="card c-ir" id="c-ir" style="--cc:var(--ir)">
+        <div class="ch"><h3>IR Cab</h3><span class="sub">resposta de impulso do violão</span><label class="tg"><input type="checkbox" id="sw-ir"><span></span></label></div>
+        <div class="body">
+          <div class="irs" id="irs"></div>
+          <div class="irlegend" id="irlegend"></div>
+          <div class="irrow"><span class="muted tiny" id="irlab">IR 0</span><input type="text" id="irname" maxlength="40" placeholder="Dê um nome a esta IR (ex.: Eastman — bossa)"></div>
+          <div class="irsend">
+            <span class="muted tiny">Enviar um WAV para o pedal</span>
+            <select id="irslot" title="Slot de importação do CubeSuite (Import to)"></select>
+            <button id="irsend">Escolher WAV e enviar…</button>
+            <span class="tiny muted" id="irprog"></span>
+            <input type="file" id="irfile" accept=".wav,audio/wav" hidden>
+          </div>
+        </div>
+      </section>
+      <section class="card c-tone" id="c-tone" style="--cc:var(--tone)">
+        <div class="ch"><h3>Tom</h3><span class="sub">anti-microfonia · compressor · equalização</span><label class="tg"><input type="checkbox" id="sw-tone"><span></span></label></div>
+        <div class="body tonegrid">
+          <div class="knobs" id="k-tone"></div>
+          <div><svg class="eq" id="eq" viewBox="0 0 320 140"></svg><div class="note">Arraste os pontos · curva ilustrativa</div></div>
+        </div>
+      </section>
+    </div>
+    <details class="log"><summary>log técnico</summary><pre id="log"></pre></details>
+    </div>
+  </main>
+</div>
+
+<div class="stage" id="stage" hidden>
+  <div class="st-top"><b>Palco</b><select id="st-src" title="Quais caixinhas mostrar"></select><span class="grow"></span><span class="tiny st-hint">A B C = banco do pedal · 1–9 = modo · ← → · Esc sai</span><button id="st-close">✕</button></div>
+  <div class="st-banks" id="st-banks"></div>
+  <div class="st-now"><div class="st-nowname" id="st-name"></div><div class="st-tag" id="st-tag"></div></div>
+  <div class="st-grid" id="st-grid"></div>
+  <div class="st-ctl">
+    <div class="st-tg" id="st-tg"></div>
+    <div class="st-vol"><button class="icon" id="st-vm" title="Volume −4">−</button><input type="range" id="st-volr" min="0" max="127" aria-label="Volume"><button class="icon" id="st-vp" title="Volume +4">+</button><b id="st-volv"></b></div>
+  </div>
+</div>
+
+<div class="landing" id="landing">
+  <div class="lcard">
+    <h1>Cube Editor</h1>
+    <p>Feche o CubeSuite e ligue o Cube Baby no USB. Os knobs mudam o som na hora, e a sua biblioteca de presets fica guardada neste computador.</p>
+    <div class="row"><button class="pri" id="connect">Conectar ao pedal</button><button id="demo">Explorar sem o pedal</button></div>
+  </div>
+</div>
+<nav class="bnav" id="bnav">
+  <button data-v="play" class="on"><i>🎸</i><span>Tocar</span></button>
+  <button data-v="edit"><i>🎛️</i><span>Ajustar</span></button>
+  <button data-v="lib"><i>📚</i><span>Biblioteca</span></button>
+  <button data-v="stage"><i>▶</i><span>Palco</span></button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script src="core.js"></script>
+<script>
+/* ======================= base ======================= */
+const $ = (s) => document.querySelector(s);
+const C = Cube.CONTROLS, K = Object.fromEntries(C.map(c => [c.key, c]));
+const SLOT = ['A', 'B', 'C'];
+const vec = (o) => C.map(c => o[c.key]);
+/* Faixas do manual do Cube Baby AC (e do CubeSuite). A intensidade cresce em direção às pontas:
+     MOD    0-6 chorus (mais forte em 0) · 7-8 desligado · 9-15 trêmolo (mais forte em 15)
+     SPACE  0-13 reverb (mais forte em 0) · 14-16 desligado · 17-31 delay (mais forte em 31)
+     TIME   repetições do delay (só se ouve com SPACE em delay)
+     IR CAB 0 = IR desligada · 1-8 = os 8 slots
+   Ordem do sinal: EQ → compressor → anti-feedback → chorus/trêmolo → delay/reverb → IR. */
+const MOD_OFF = 7, SPACE_OFF = 15;
+const NEUTRAL = { treb:64, mid:64, bass:64, time:30, mod:MOD_OFF, volume:100, antifb:3, space:SPACE_OFF, comp:2, ircab:1, sw1:1, sw2:1, sw3:1 };
+const FACTORY_IR = ['', 'Mart 45 Piezo 3C', 'Acoustic2-Impulse', 'Wurlitzer 1', 'Mart 45 Soundhole 5c', 'Soldano 2inch', 'On Axis grille', 'Taylor 314ce Soundelux', 'Pro Jr floor'];
+const APP_VERSION = 'v3 · bancos';
+/* Bancos = os 3 slots físicos do pedal (A, B, C). Cada banco tem uma lógica de uso, os seus modos
+   e as suas IRs. As IRs seguem o kit da aba IRs: A usa os slots de IR 1-3, B usa 4-6, C usa 7-8. */
+const BANKS = {
+  A:{ name:'Louvor', col:'#d9b56f', irs:[1, 2, 3], hint:'ritmo, dedilhado, oração e solo no louvor' },
+  B:{ name:'Intros e solos', col:'#e0846c', irs:[4, 5, 6], hint:'introduções e solos com presença' },
+  C:{ name:'Bossa / pagode', col:'#8aa4e6', irs:[7, 8], hint:'nylon, voz e violão, levadas' },
+};
+const mkM = (bank, id, name, note, over) => ({ id:'tpl-' + id, tpl:1, fixedIr:true, bank, name, tag:BANKS[bank].name, note, v:vec({ ...NEUTRAL, ...over }) });
+const mkU = (id, name, note, over) => ({ id:'tpl-' + id, tpl:1, name, tag:'Utilidades', note, v:vec({ ...NEUTRAL, ...over }) });
+/* Os valores de EQ (64 = meio) são um ponto de partida: ajuste de ouvido. Tudo aqui é sugestão, não receita. */
+const TEMPLATES = [
+  mkM('A', 'a-ritmo', 'Ritmo', 'Segurar a levada com a banda: reverb curto, grave contido, compressão firme.', { ircab:1, comp:4, antifb:5, bass:54, mid:62, treb:60, space:11, volume:100 }),
+  mkM('A', 'a-dedilhado', 'Dedilhado / fingerstyle', 'Dedilhados durante o louvor: definido e neutro, reverb leve.', { ircab:3, comp:3, antifb:4, bass:60, mid:60, treb:62, space:8, volume:100 }),
+  mkM('A', 'a-oracao', 'Dedilhado ambiente / oração', 'Momentos calmos: reverb forte e um trêmolo leve.', { ircab:3, comp:2, antifb:4, bass:62, mid:56, treb:58, space:3, mod:10, volume:98 }),
+  mkM('A', 'a-solo', 'Solo no louvor', 'Mais médio e volume, com um delay discreto.', { ircab:2, comp:4, antifb:5, bass:52, mid:74, treb:64, space:22, time:50, volume:110 }),
+  mkM('B', 'b-intro', 'Introdução ambiente', 'Reverb forte e trêmolo para abrir a música.', { ircab:6, comp:2, antifb:4, bass:60, mid:62, treb:64, space:2, mod:11, volume:104 }),
+  mkM('B', 'b-solo', 'Solo', 'Corpo e um delay médio.', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:62, space:24, time:60, volume:110 }),
+  mkM('B', 'b-presenca', 'Solo com presença', 'Médios e brilho para frente, quase seco.', { ircab:4, comp:5, antifb:5, bass:50, mid:80, treb:62, space:12, volume:114 }),
+  mkM('B', 'b-eco', 'Solo com eco curto', 'Slapback: um eco curto e discreto.', { ircab:4, comp:3, antifb:4, mid:68, treb:62, space:19, time:18, volume:108 }),
+  mkM('C', 'c-bossa', 'Bossa · nylon quente', 'Grave generoso, agudos suaves e reverb leve.', { ircab:8, comp:3, antifb:3, bass:70, mid:60, treb:46, space:10, volume:100 }),
+  mkM('C', 'c-voz', 'Bossa · voz e violão', 'Mais seco e macio para não cobrir a voz.', { ircab:8, comp:2, antifb:3, bass:64, mid:54, treb:44, space:12, volume:96 }),
+  mkM('C', 'c-pagode', 'Pagode · levada', 'Ataque firme e médios para a levada aparecer; quase seco.', { ircab:7, comp:5, antifb:4, bass:60, mid:68, treb:58, space:13, volume:104 }),
+  mkM('C', 'c-melodia', 'Bossa · melodia / solo', 'Médios na frente e um delay discreto.', { ircab:7, comp:4, antifb:3, bass:62, mid:70, treb:54, space:21, time:40, volume:108 }),
+  mkU('tremolo', 'Trêmolo suave', 'Mod acima de 8 liga o trêmolo; aqui no meio da faixa.', { mod:11, space:11, volume:100 }),
+  mkU('palco', 'Palco · anti-microfonia', 'Anti-feedback no máximo, grave contido.', { antifb:8, comp:4, bass:44, mid:60, treb:54, space:13, volume:100 }),
+  mkU('sem-ir', 'Sem IR (som cru)', 'IR desligada, para comparar com e sem o timbre da IR.', { sw1:0, ircab:0, comp:2, antifb:3 }),
+  mkU('seco', 'Limpo e seco', 'Seção de efeitos desligada.', { sw2:0 }),
+];
+const TAGCOL = { 'louvor':'#d9b56f', 'intros e solos':'#e0846c', 'bossa / pagode':'#8aa4e6', 'equilibrado':'#d4b06a', 'solos':'#e0846c', 'bossa':'#7fb6d8', 'igreja':'#d9b56f', 'utilidades':'#a996d9', 'modelos':'#6f6a62' };
+const OTHER = ['#a996d9', '#e39aa5', '#d9b56f', '#d9c27a', '#9fb7c9'];
+function tagColor(t) { const k = (t || '').trim().toLowerCase(); if (TAGCOL[k]) return TAGCOL[k]; if (!k) return '#6f6a62'; let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return OTHER[h % OTHER.length]; }
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('cube.' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('cube.' + k, JSON.stringify(v)); } catch {} },
+};
+let presets = store.get('presets2', null);
+if (!presets) {
+  presets = store.get('presets', []).filter(p => p && Array.isArray(p.v) && p.v.length === 13)
+    .map(p => ({ id:uid(), name:p.name || 'Sem nome', tag:p.tag || '', note:p.note || '', fav:false, v:p.v.slice() }));
+  store.set('presets2', presets);
+}
+let setlists = store.get('setlists', []);
+let irNames = store.get('irNames', {});
+if (!store.get('migr1', false)) {   // as capturas de 21/10/2026 deixaram um impulso de teste nos slots 1 e 5
+  for (const s of [1, 5]) if (!irNames[s]) irNames[s] = '⚠ teste (reimporte a sua IR)';
+  store.set('irNames', irNames); store.set('migr1', true);
+}
+const nrm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');
+/* "(fábrica?)": o nome de fábrica só vale se você nunca trocou a IR desse slot fora desta página; renomeie para corrigir */
+const irLabel = (i) => i === 0 ? 'OFF' : (irNames[i] || (FACTORY_IR[i] ? FACTORY_IR[i] + ' (fábrica?)' : 'IR ' + i));
+const irShort = (i) => irLabel(i).replace(' (fábrica?)', '');
+const CAT_LABEL = { equilibrado:'Equilibrado', introsesolos:'Intros e solos', bossa:'Bossa' };
+/* o que mostrar como "IR" de um item: modelos sugerem uma categoria; presets seus mostram a IR gravada */
+const irText = (p) => {
+  const n = p.v[K.ircab.id];
+  if (n === 0) return 'sem IR';
+  if (p.tpl && !p.fixedIr) return 'IR atual';
+  return 'IR ' + n + ' · ' + (p.tpl ? irShort(n) : (p.ir || irShort(n)));
+};
+/* banco: A/B/C → índice e nome (o nome pode ser trocado com duplo clique) */
+const bankIdx = (L) => SLOT.indexOf(L);
+const bankName = (i) => slotNames[i] || BANKS[SLOT[i]].name;
+const bankModes = (L) => presets.filter(p => p.bank === L).concat(TEMPLATES.filter(t => t.bank === L));
+const fxSummary = (v) => !v[K.sw2.id] ? 'efeitos desligados' : ([modName(v[K.mod.id]), spaceName(v[K.space.id])].filter(Boolean).join(' + ') || 'sem efeitos');
+let slotNames = store.get('slotNames', ['', '', '']);
+const persist = () => { store.set('presets2', presets); store.set('setlists', setlists); };
+
+/* ======================= estado ======================= */
+let access, out, inp, demo = false, dev = null, devSaved = null, selfTestOk = false, target = 0;
+let cur = null, base = null, baseMeta = null, hist = [], fut = [];
+const view = { tab:'lib', q:'', filter:'all', setlist:store.get('lastSetlist', null), pos:-1 };
+const knobs = {};
+
+const logEl = $('#log');
+const log = (s) => { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scrollHeight; };
+function toast(t, bad) { const e = $('#toast'); e.textContent = t; e.className = 'toast show' + (bad ? ' bad' : ''); clearTimeout(toast.t); toast.t = setTimeout(() => e.className = 'toast', 2400); }
+function setStatus(t, mode) { $('#status').textContent = t; $('#pill').className = 'pill ' + (mode || ''); }
+
+/* ======================= MIDI ======================= */
+async function connect() {
+  if (!navigator.requestMIDIAccess) return toast('Use o Chrome ou o Edge (Web MIDI)', true);
+  try { access = await navigator.requestMIDIAccess({ sysex:true }); } catch { return toast('Permissão MIDI negada', true); }
+  const outs = [...access.outputs.values()];
+  if (!outs.length) return toast('Nenhuma porta MIDI. O pedal está no USB?', true);
+  const sel = $('#portSel');
+  sel.innerHTML = outs.map(o => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+  const pref = outs.find(o => /usb.?midi|cube|cuvave/i.test(o.name)) || outs[0];
+  sel.value = pref.id; sel.hidden = outs.length < 2; sel.onchange = () => openPort(sel.value);
+  // celular: o cabo OTG pode ser plugado/desplugado com a página aberta
+  access.onstatechange = (ev) => {
+    const p = ev.port; if (p.type !== 'output') return;
+    if (p.state === 'disconnected' && out && p.id === out.id) { setStatus('cabo desconectado'); toast('O pedal foi desconectado', true); }
+    else if (p.state === 'connected' && (!out || p.id === out.id || out.state === 'disconnected') && /usb.?midi|cube|cuvave/i.test(p.name)) { toast('Pedal conectado de novo'); openPort(p.id); }
+  };
+  await openPort(pref.id);
+}
+async function openPort(id) {
+  demo = false; dev = null;
+  out = access.outputs.get(id);
+  inp = [...access.inputs.values()].find(i => i.name === out.name) || [...access.inputs.values()].find(i => /usb.?midi|cube|cuvave/i.test(i.name));
+  if (!inp) return toast('Porta de entrada não encontrada', true);
+  inp.onmidimessage = onMsg;
+  try { await out.open(); await inp.open(); } catch { return toast('Não abriu a porta. O CubeSuite está aberto?', true); }
+  setStatus('lendo…');
+  for (const m of Cube.HANDSHAKE) { out.send(m); await new Promise(r => setTimeout(r, 80)); }
+  out.send(Cube.REQUEST_PRESETS);
+  setTimeout(() => { if (!dev) { setStatus('sem resposta'); toast('O pedal não respondeu', true); } }, 3000);
+}
+function onMsg(ev) {
+  const b = Array.from(ev.data);
+  if (b.length === 12 && b[0] === 0xf0 && b[2] === 0x32 && b[3] === 0x01 && b[4] === 0x08) return onAck();
+  if (!(b.length === 74 && b[3] === 0x0d && b[4] === 0x41 && b[5] === 3)) return;
+  let p; try { p = Cube.parseDump(b); } catch (e) { return log('dump inválido: ' + e.message); }
+  const first = !dev;
+  dev = p.data.slice(); devSaved = p.data.slice();
+  selfTestOk = p.checksumOk && Cube.buildDump(dev, Cube.HDR_READ).join() === b.join();
+  log('dump lido; checksum ' + (p.checksumOk ? 'ok' : 'FALHOU') + '; autoteste ' + (selfTestOk ? 'ok' : 'FALHOU'));
+  setStatus('conectado', 'on');
+  $('#landing').hidden = true;
+  if (first) loadSlot(target); else { updDevState(); }
+}
+function startDemo() {
+  demo = true; selfTestOk = false; dev = new Array(Cube.DATA_LEN).fill(0);
+  for (let s = 0; s < 3; s++) { const m = TEMPLATES.find(t => t.bank === SLOT[s]); C.forEach((c, k) => dev[16 * s + c.id] = m.v[k]); }
+  devSaved = dev.slice();
+  setStatus('demonstração', 'demo'); $('#landing').hidden = true; loadSlot(0);
+}
+
+/* fila de envio: guarda só o último valor de cada parâmetro e manda o próximo só depois
+   que o pedal confirma o anterior (F0 00 32 01 08 …), como o CubeSuite faz. Sem confirmação
+   em 150 ms, segue assim mesmo e conta como perdida. */
+const q = new Map(); let busy = false, ackT = null; const stats = { sent:0, acked:0, timeouts:0 };
+function queue(idx, v) { if (demo || !out) return; q.set(idx, v); if (!busy) pump(); }
+function pump() {
+  clearTimeout(ackT);
+  const it = q.entries().next(); if (it.done) { busy = false; return; }
+  busy = true; const [i, v] = it.value; q.delete(i);
+  out.send(Cube.paramMsg(i, v)); stats.sent++;
+  ackT = setTimeout(() => { stats.timeouts++; log('sem confirmação do pedal (param ' + i + ')'); pump(); }, 150);
+}
+function onAck() {
+  if (seq) return seq.ack();
+  if (!busy) return; stats.acked++; clearTimeout(ackT); ackT = setTimeout(pump, 4);
+}
+
+/* envio de uma sequência longa (IR): uma mensagem por vez, esperando a confirmação do pedal */
+let seq = null;
+function sendSeq(msgs, onProgress) {
+  return new Promise((resolve, reject) => {
+    clearTimeout(ackT); q.clear(); busy = false;
+    let i = 0, lost = 0, t = null, awaiting = false, finished = false;
+    const done = (err) => { finished = true; clearTimeout(t); seq = null; err ? reject(err) : resolve({ lost }); };
+    const next = () => {
+      if (finished) return;
+      if (i >= msgs.length) return done();
+      onProgress && onProgress(i, msgs.length);
+      out.send(msgs[i]); const mine = i; i++; awaiting = true;
+      t = setTimeout(() => {
+        if (finished) return; awaiting = false; lost++; log('sem confirmação na mensagem ' + mine);
+        if (lost > 3) done(new Error('o pedal parou de responder (' + lost + ' mensagens sem confirmação)')); else next();
+      }, 600);
+    };
+    // cada mensagem aceita uma única confirmação (uma confirmação atrasada de outro comando não libera duas)
+    const ack = () => { if (finished || !awaiting) return; awaiting = false; clearTimeout(t); setTimeout(next, 4); };
+    // espera um instante antes de começar: confirmações pendentes de comandos anteriores chegam e são ignoradas
+    setTimeout(() => { if (finished) return; seq = { ack }; next(); }, 60);
+  });
+}
+
+/* ======================= modelo ======================= */
+function setVal(k, v) {
+  v = Math.max(0, Math.min(C[k].max, Math.round(v)));
+  if (cur.v[k] === v) return false;
+  cur.v[k] = v; const idx = 16 * target + C[k].id; dev[idx] = v; queue(idx, v);
+  onChange(); return true;
+}
+function applyAll() { C.forEach((c, k) => { const idx = 16 * target + c.id; dev[idx] = cur.v[k]; queue(idx, cur.v[k]); }); }
+function pushHist() { hist.push({ cur:clone(cur), base:base.slice(), baseMeta:clone(baseMeta) }); if (hist.length > 150) hist.shift(); fut = []; updUndo(); }
+let lastH = { k:null, t:0 };
+function histTick(tag) { const n = Date.now(); if (lastH.k !== tag || n - lastH.t > 800) pushHist(); lastH = { k:tag, t:n }; }
+function restore(s) { cur = s.cur; base = s.base; baseMeta = s.baseMeta; applyAll(); renderEditor(); renderList(); }
+function undo() { if (!hist.length) return; fut.push({ cur:clone(cur), base:base.slice(), baseMeta:clone(baseMeta) }); restore(hist.pop()); updUndo(); }
+function redo() { if (!fut.length) return; hist.push({ cur:clone(cur), base:base.slice(), baseMeta:clone(baseMeta) }); restore(fut.pop()); updUndo(); }
+function updUndo() { $('#undo').disabled = !hist.length; $('#redo').disabled = !fut.length; }
+
+const findP = (id) => presets.find(p => p.id === id) || TEMPLATES.find(p => p.id === id);
+/* Escolhe o slot de IR de um preset: pelo nome exato da IR (presets seus) ou pela categoria (modelos). */
+function irFor(p) {
+  if (p.ir) {
+    const s = Object.keys(irNames).map(Number).find(n => irNames[n] === p.ir);
+    return s != null ? { slot:s } : { msg:`A IR “${p.ir}” deste preset não está em nenhum slot (aba IRs)` };
+  }
+  if (p.irCat && irlib.length) {
+    for (let s = 1; s <= 8; s++) {
+      const rec = irlib.find(r => r.name === slotAssign[s]);
+      if (rec && p.irCat.includes(nrm(rec.cat))) return { slot:s };
+    }
+    return { msg:'Dica: este modelo combina com uma IR da categoria “' + ({ equilibrado:'Equilibrado', introsesolos:'Intros e solos', bossa:'Bossa' }[p.irCat[0]] || p.irCat[0]) + '”; grave uma num slot (aba IRs) e ele passa a escolhê-la sozinho' };
+  }
+  return {};
+}
+function loadPreset(p, pos) {
+  const prevIr = cur ? cur.v[K.ircab.id] : null;
+  if (cur) pushHist();
+  cur = { id:p.id, tpl:!!p.tpl, name:p.name, tag:p.tag || '', note:p.note || '', fav:!!p.fav, irCat:p.irCat, bank:p.bank, v:p.v.map((x, k) => Math.min(x, C[k].max)) };
+  const hint = irFor(p);
+  if (hint.slot != null) cur.v[K.ircab.id] = hint.slot;
+  // modos dos bancos trazem a IR certa; utilidades mantêm a IR que está selecionada (só "Sem IR" a desliga)
+  else if (p.tpl && !p.fixedIr && prevIr != null && p.v[K.ircab.id] !== 0) cur.v[K.ircab.id] = prevIr;
+  base = cur.v.slice(); baseMeta = { name:cur.name, tag:cur.tag, note:cur.note };
+  if (pos != null) view.pos = pos;
+  applyAll(); renderEditor(); renderList(); renderStage();
+  if (hint.msg) toast(hint.msg);
+}
+/* restore = volta ao que está GRAVADO no pedal (devSaved) e reenvia, desfazendo o que foi testado ao vivo */
+function loadSlot(t, restore) {
+  if (cur) pushHist();
+  target = t;
+  const src = restore && devSaved ? devSaved : dev;
+  const v = C.map(c => src[16 * t + c.id]);
+  cur = { id:null, slot:t, name:'Pedal · ' + SLOT[t] + ' · ' + bankName(t), tag:'', note:'', fav:false, bank:SLOT[t], v };
+  base = v.slice(); baseMeta = { name:cur.name, tag:'', note:'' };
+  if (restore) applyAll();
+  renderSlots(); renderEditor(); renderList(); renderStage();
+}
+const isMod = () => cur.v.some((x, i) => x !== base[i]) || cur.name !== baseMeta.name || cur.tag !== baseMeta.tag || cur.note !== baseMeta.note;
+
+function savePreset() {
+  const p = cur.id && !cur.tpl && presets.find(x => x.id === cur.id);
+  if (!p) return saveAsNew();
+  Object.assign(p, { name:cur.name.trim() || 'Sem nome', tag:cur.tag.trim(), note:cur.note.trim(), v:cur.v.slice(), ir:irNames[cur.v[K.ircab.id]] || '', bank:p.bank || cur.bank });
+  base = cur.v.slice(); baseMeta = { name:p.name, tag:p.tag, note:p.note }; cur.name = p.name;
+  persist(); renderEditor(); renderList(); toast('Preset atualizado');
+}
+function saveAsNew(suffix, bank) {
+  let name = (cur.name || '').trim() || 'Novo preset';
+  if (cur.tpl || suffix) name += suffix || ' (meu)';
+  const b = bank || cur.bank;
+  const p = { id:uid(), name, tag:b ? BANKS[b].name : (cur.tpl ? '' : cur.tag.trim()), note:cur.note.trim(), fav:false, v:cur.v.slice(), ir:irNames[cur.v[K.ircab.id]] || '', irCat:cur.irCat, bank:b };
+  presets.unshift(p); persist();
+  cur = { ...cur, id:p.id, tpl:false, slot:undefined, name:p.name, tag:p.tag, bank:b };
+  base = cur.v.slice(); baseMeta = { name:p.name, tag:p.tag, note:p.note };
+  renderEditor(); renderList(); toast('Salvo na biblioteca'); return p;
+}
+function newPreset() {
+  if (cur) pushHist();
+  cur = { id:null, name:'Novo modo', tag:'', note:'', fav:false, bank:SLOT[target], v:vec(NEUTRAL) };
+  base = cur.v.slice(); baseMeta = { name:'', tag:'', note:'' };
+  applyAll(); renderEditor(); renderList(); $('#pname').select();
+}
+function deletePreset() {
+  const p = cur.id && presets.find(x => x.id === cur.id); if (!p) return;
+  if (!confirm('Excluir “' + p.name + '” da biblioteca?')) return;
+  presets = presets.filter(x => x !== p);
+  setlists.forEach(s => s.items = s.items.filter(id => id !== p.id));
+  cur.id = null; persist(); renderEditor(); renderList(); toast('Excluído');
+}
+function toggleFav(id) {
+  const p = presets.find(x => x.id === id); if (!p) return toast('Salve o preset antes de favoritar');
+  p.fav = !p.fav; if (cur && cur.id === id) cur.fav = p.fav; persist(); renderList(); renderEditor();
+}
+
+/* ======================= navegação ======================= */
+function filtered() {
+  const q = view.q.trim().toLowerCase();
+  let L = view.filter === 'tpl' ? TEMPLATES.slice() : view.filter === 'fav' ? presets.filter(p => p.fav)
+    : view.filter === 'all' ? presets.concat(TEMPLATES) : presets.filter(p => (p.tag || '').trim().toLowerCase() === view.filter);
+  if (q) L = L.filter(p => (p.name + ' ' + (p.tag || '') + ' ' + (p.note || '')).toLowerCase().includes(q));
+  return L;
+}
+const curSet = () => setlists.find(s => s.id === view.setlist);
+function ctx() {
+  if (view.tab === 'set' && curSet()) { const s = curSet(); return { name:'Setlist · ' + s.name, list:s.items.map(findP).filter(Boolean), set:true }; }
+  return { name:view.filter === 'all' ? 'Biblioteca' : 'Biblioteca · ' + chipName(view.filter), list:filtered(), set:false };
+}
+function nav(d) {
+  const c = ctx(), L = c.list; if (!L.length) return toast('Lista vazia');
+  let i = c.set && view.pos >= 0 && L[view.pos] && cur && L[view.pos].id === cur.id ? view.pos : L.findIndex(p => cur && p.id === cur.id);
+  i = i < 0 ? (d > 0 ? 0 : L.length - 1) : (i + d + L.length) % L.length;
+  loadPreset(L[i], i);
+  document.querySelector('.it.on')?.scrollIntoView({ block:'nearest' });
+}
+
+/* ======================= knob ======================= */
+/* o que cada faixa de valor faz (manual do Cube Baby AC); knobs de dois lados partem do centro "desligado" */
+const pct = (x) => Math.max(0, Math.min(100, Math.round(x * 100)));
+const ZONES = {
+  mod: { center:7.5, text:(v) => v <= 6 ? `chorus ${pct((7 - v) / 7)}%` : v <= 8 ? 'desligado' : `trêmolo ${pct((v - 8) / 7)}%` },
+  space: { center:15, text:(v) => v <= 13 ? `reverb ${pct((14 - v) / 14)}%` : v <= 16 ? 'desligado' : `delay ${pct((v - 16) / 15)}%` },
+};
+const modName = (v) => v <= 6 ? 'chorus' : v <= 8 ? '' : 'trêmolo', spaceName = (v) => v <= 13 ? 'reverb' : v <= 16 ? '' : 'delay';
+const polar = (c, r, deg) => { const a = deg * Math.PI / 180; return [c + r * Math.sin(a), c - r * Math.cos(a)]; };
+function arcPath(c, r, d0, d1) { const [x0, y0] = polar(c, r, d0), [x1, y1] = polar(c, r, d1); return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${d1 - d0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; }
+function makeKnob(k, big) {
+  const c = C[k], S = big ? 132 : 82, ctr = S / 2, r = ctr - 7;
+  const el = document.createElement('div');
+  el.className = 'knob' + (big ? ' big' : ''); el.tabIndex = 0;
+  el.setAttribute('role', 'slider'); el.setAttribute('aria-label', c.label); el.setAttribute('aria-valuemin', 0); el.setAttribute('aria-valuemax', c.max);
+  el.title = `${c.label}: 0–${c.max} · arraste, role ou use as setas · duplo clique volta ao original · clique no número para digitar`;
+  el.innerHTML = `<div class="kw" style="width:${S}px;height:${S}px"><svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
+    <path class="trk" d="${arcPath(ctr, r, -135, 135)}"/><path class="arc"/>
+    <circle class="cap" cx="${ctr}" cy="${ctr}" r="${r - 10}"/><line class="base"/><circle class="kdot" r="${big ? 6 : 5}"/></svg>
+    <button class="kv" tabindex="-1"></button></div><div class="kl">${c.label}</div><div class="kr">0–${c.max}</div>`;
+  const arc = el.querySelector('.arc'), dot = el.querySelector('.kdot'), bl = el.querySelector('.base'), kv = el.querySelector('.kv'), kw = el.querySelector('.kw'), kr = el.querySelector('.kr');
+  const deg = (v) => -135 + 270 * v / c.max;
+  const zone = ZONES[c.key];
+  const dc = zone ? deg(zone.center) : null;
+  if (zone) {
+    const [a, b] = polar(ctr, r + 6, dc), [e, f] = polar(ctr, r + 11, dc);
+    el.querySelector('svg').insertAdjacentHTML('beforeend', `<line x1="${a}" y1="${b}" x2="${e}" y2="${f}" stroke="var(--dim)" stroke-width="2" stroke-linecap="round"/>`);
+  }
+  const draw = () => {
+    const v = cur.v[k], d = deg(v);
+    if (zone) arc.setAttribute('d', Math.abs(d - dc) > 1 ? arcPath(ctr, r, Math.min(d, dc), Math.max(d, dc)) : '');
+    else arc.setAttribute('d', v > 0 ? arcPath(ctr, r, -135, d) : '');
+    const [dx, dy] = polar(ctr, r, d); dot.setAttribute('cx', dx); dot.setAttribute('cy', dy);
+    if (base[k] !== v) { const bd = deg(base[k]), [a, b] = polar(ctr, r + 5, bd), [e, f] = polar(ctr, r - 5, bd); bl.setAttribute('x1', a); bl.setAttribute('y1', b); bl.setAttribute('x2', e); bl.setAttribute('y2', f); bl.style.display = ''; }
+    else bl.style.display = 'none';
+    if (!kv.querySelector('input')) kv.textContent = v;
+    if (zone) kr.textContent = zone.text(v);
+    el.setAttribute('aria-valuenow', v);
+  };
+  const set = (v) => { if (setVal(k, v)) draw(); };
+  let st = null;
+  kw.onpointerdown = (e) => { kw.setPointerCapture(e.pointerId); st = { y:e.clientY, v:cur.v[k], moved:false, onNum:!!e.target.closest('.kv') }; el.focus(); e.preventDefault(); };
+  kw.onpointermove = (e) => {
+    if (!st) return; const dy = st.y - e.clientY;
+    if (!st.moved && Math.abs(dy) < 3) return;
+    if (!st.moved) { st.moved = true; pushHist(); }
+    set(st.v + dy / (e.shiftKey ? 600 : 170) * c.max);
+  };
+  kw.onpointerup = () => { if (st && !st.moved && st.onNum) editNum(); st = null; };
+  kw.onpointercancel = () => { st = null; };
+  kw.onwheel = (e) => { e.preventDefault(); histTick('w' + k); set(cur.v[k] + (e.deltaY < 0 ? 1 : -1) * Math.max(1, Math.round(c.max / 40))); };
+  kw.ondblclick = () => { if (cur.v[k] !== base[k]) { pushHist(); set(base[k]); } };
+  el.onkeydown = (e) => {
+    const big = Math.max(1, Math.round(c.max / 10)); let v = null;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') v = cur.v[k] + (e.shiftKey ? big : 1);
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') v = cur.v[k] - (e.shiftKey ? big : 1);
+    else if (e.key === 'Home') v = 0; else if (e.key === 'End') v = c.max;
+    else if (e.key === 'Enter') { editNum(); e.preventDefault(); return; }
+    if (v == null) return; e.preventDefault(); histTick('k' + k); set(v);
+  };
+  function editNum() {
+    const i = document.createElement('input'); i.type = 'number'; i.min = 0; i.max = c.max; i.value = cur.v[k];
+    kv.textContent = ''; kv.appendChild(i); i.focus(); i.select();
+    let done = false;
+    const fin = (ok) => { if (done) return; done = true; const n = parseInt(i.value, 10); i.remove(); if (ok && !isNaN(n) && n !== cur.v[k]) { pushHist(); setVal(k, n); } draw(); };
+    i.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') fin(true); if (e.key === 'Escape') fin(false); };
+    i.onblur = () => fin(true); i.onpointerdown = (e) => e.stopPropagation();
+  }
+  draw(); knobs[k] = { draw };
+  return el;
+}
+function knobsInto(sel, keys, big) { const box = $(sel); box.innerHTML = ''; keys.forEach(key => box.appendChild(makeKnob(K[key].id, big))); }
+
+/* ======================= EQ ilustrativa ======================= */
+let eqRefresh = () => {};
+function buildEq() {
+  const svg = $('#eq'), W = 320, H = 140, X0 = 14, X1 = 306, YC = 66, AMP = 50, DB = 12;
+  const fx = (f) => X0 + (Math.log10(f / 30)) / Math.log10(16000 / 30) * (X1 - X0);
+  const pts = [{ k:'bass', f:100, t:'lo' }, { k:'mid', f:900, t:'pk' }, { k:'treb', f:5000, t:'hi' }];
+  const gain = (key) => (cur.v[K[key].id] / K[key].max - 0.5) * 2 * DB;
+  const resp = (f) => pts.reduce((s, p) => { const g = gain(p.k), x = f / p.f; return s + (p.t === 'lo' ? g / (1 + x * x) : p.t === 'hi' ? g * x * x / (1 + x * x) : g / (1 + Math.pow(Math.log(x) / 0.9, 2))); }, 0);
+  const yy = (db) => YC - db / DB * AMP;
+  svg.innerHTML = `<rect width="${W}" height="${H}" rx="12" fill="#121317"/>` +
+    [-12, -6, 0, 6, 12].map(d => `<line x1="${X0}" x2="${X1}" y1="${yy(d)}" y2="${yy(d)}" stroke="${d ? '#1e2026' : '#3a3d46'}"/>`).join('') +
+    [100, 1000, 10000].map(f => `<line y1="8" y2="${H - 20}" x1="${fx(f)}" x2="${fx(f)}" stroke="#1e2026"/><text x="${fx(f)}" y="${H - 6}" fill="#6f6a62" font-size="9" text-anchor="middle">${f >= 1000 ? f / 1000 + 'k' : f} Hz</text>`).join('') +
+    `<path id="eqf" fill="#d6a06f1c"/><path id="eqp" fill="none" stroke="var(--tone)" stroke-width="2.5" stroke-linejoin="round"/>` +
+    pts.map(p => `<g class="eqh" data-k="${p.k}"><circle r="16" fill="transparent"/><circle r="8" fill="var(--tone)" stroke="#121317" stroke-width="3"/><text y="-14" text-anchor="middle" font-size="9" fill="#a39d92">${K[p.k].label}</text></g>`).join('');
+  const hs = [...svg.querySelectorAll('.eqh')];
+  eqRefresh = () => {
+    let d = ''; for (let i = 0; i <= 90; i++) { const f = 30 * Math.pow(16000 / 30, i / 90); d += (i ? 'L' : 'M') + fx(f).toFixed(1) + ' ' + yy(resp(f)).toFixed(1); }
+    $('#eqp').setAttribute('d', d); $('#eqf').setAttribute('d', d + `L${X1} ${YC}L${X0} ${YC}Z`);
+    hs.forEach((h, i) => h.setAttribute('transform', `translate(${fx(pts[i].f)},${Math.max(18, Math.min(H - 24, yy(gain(pts[i].k))))})`));
+  };
+  hs.forEach(h => {
+    const key = h.dataset.k, k = K[key].id; let on = false;
+    h.onpointerdown = (e) => { h.setPointerCapture(e.pointerId); on = true; pushHist(); e.preventDefault(); };
+    h.onpointermove = (e) => {
+      if (!on) return; const r = svg.getBoundingClientRect(), y = (e.clientY - r.top) / r.height * H;
+      if (setVal(k, (0.5 + (YC - y) / AMP / 2) * K[key].max)) knobs[k]?.draw();
+    };
+    h.onpointerup = h.onpointercancel = () => { on = false; };
+  });
+  eqRefresh();
+}
+
+/* ======================= render ======================= */
+/* ---- bancos = slots físicos A/B/C ---- */
+function renderSlots() {
+  $('#banks').innerHTML = SLOT.map((n, i) => `<button class="bank ${i === target ? 'on' : ''}" data-i="${i}" style="--bc:${BANKS[n].col}" title="Banco ${n} · duplo clique para renomear"><b>${n}</b><span>${esc(bankName(i))}</span></button>`).join('');
+  const L = SLOT[target], b = BANKS[L];
+  $('#bankhint').innerHTML = `No pedal, pise em <b>${L}</b> para ouvir este banco · ${esc(b.hint)} · IRs ${b.irs.join(', ')}`;
+  renderModes(); renderKitBar();
+}
+/* Os modos apontam para as posições do kit; avisa enquanto as IRs do pedal não forem as do kit */
+const kitOnPedal = () => IRKIT.every(k => slotAssign[k.slot] === k.name);
+function renderKitBar() {
+  const bar = $('#kitbar'); if (!bar) return;
+  bar.hidden = kitOnPedal(); if (bar.hidden) return;
+  const have = IRKIT.filter(k => irlib.some(r => r.name === k.name)).length;
+  bar.innerHTML = `<span><b>As IRs do pedal ainda não seguem os bancos.</b> Os modos esperam o kit (A = IRs 1-3, B = 4-6, C = 7-8), mas os slots ainda têm outras IRs${irNames[1] ? ' (o 1 está com “' + esc(irShort(1)) + '”)' : ''}. ${have < 8 ? `Faltam ${8 - have} das 8 IRs do kit na biblioteca: importe a pasta <b>Irs</b> primeiro.` : 'As 8 IRs já estão na biblioteca.'}</span><button class="pri" id="kitgo">${have < 8 ? 'Importar IRs' : 'Gravar o kit no pedal'}</button>`;
+}
+$('#kitbar').onclick = (e) => {
+  if (!e.target.closest('#kitgo')) return;
+  view.tab = 'ir'; renderList();
+  if (window.matchMedia('(max-width:900px)').matches) toggleLib(true);
+  const have = IRKIT.filter(k => irlib.some(r => r.name === k.name)).length;
+  (have < 8 ? $('#irdirbtn') : $('#kitbtn')).scrollIntoView({ block:'center' });
+  if (have === 8) applyKit();
+};
+function renderModes() {
+  const L = SLOT[target], col = BANKS[L].col;
+  $('#modes').innerHTML = bankModes(L).map(p => `<button class="mode ${cur && cur.id === p.id ? 'on' : ''}" data-id="${esc(p.id)}" style="--bc:${col}">${p.tpl ? '' : '<i class="mine">meu</i>'}<b>${esc(p.name)}</b><small>${esc(irText(p))}<br>${esc(fxSummary(p.v))}</small></button>`).join('')
+    + `<button class="mode add" id="modeAdd" style="--bc:${col}">＋ Salvar o som atual como modo do banco ${L}</button>`;
+}
+$('#banks').onclick = (e) => {
+  const b = e.target.closest('.bank'); if (!b || !dev) return;
+  const t = +b.dataset.i; if (t === target) return;
+  loadSlot(t);
+  toast(`Banco ${SLOT[t]} · ${bankName(t)}: pise em ${SLOT[t]} no pedal para ouvir`);
+};
+$('#banks').ondblclick = (e) => { const b = e.target.closest('.bank'); if (!b) return; const i = +b.dataset.i; const n = prompt('Nome do banco ' + SLOT[i], bankName(i)); if (n !== null) { slotNames[i] = n.trim().slice(0, 30); store.set('slotNames', slotNames); renderSlots(); } };
+$('#modes').onclick = (e) => {
+  const m = e.target.closest('.mode'); if (!m || !cur) return;
+  if (m.id === 'modeAdd') { const p = saveAsNew('', SLOT[target]); renderModes(); toast(`“${p.name}” salvo como modo do banco ${SLOT[target]}`); return; }
+  const p = findP(m.dataset.id); if (p) loadPreset(p, null);
+};
+
+/* ---- controles rápidos (IRs do banco, blocos, volume) ---- */
+function renderQuick() {
+  if (!cur) return;
+  const L = SLOT[target], b = BANKS[L], ir = cur.v[K.ircab.id];
+  $('#qirs').innerHTML = '<span class="lbl">IR</span>' + b.irs.map(n => `<button class="qir ${ir === n ? 'on' : ''}" data-ir="${n}" style="--bc:${b.col}">${n} · ${esc(irShort(n))}</button>`).join('')
+    + `<button class="qir ${b.irs.includes(ir) ? '' : 'on'}" data-ir="more" style="--bc:${b.col}">${b.irs.includes(ir) ? 'outras…' : (ir === 0 ? 'sem IR' : ir + ' · ' + esc(irShort(ir)))}</button>`;
+  $('#qtg').innerHTML = [['TOM', 'sw3', 'var(--tone)'], ['EFEITOS', 'sw2', 'var(--fx)'], ['IR', 'sw1', 'var(--ir)']]
+    .map(([n, key, col]) => `<button class="${cur.v[K[key].id] ? 'on' : ''}" data-k="${key}" style="--cc:${col}">${n}</button>`).join('');
+  renderKitBar();
+  if (document.activeElement !== $('#qvol')) $('#qvol').value = cur.v[K.volume.id];
+  $('#qvolv').textContent = cur.v[K.volume.id];
+}
+$('#qirs').onclick = (e) => {
+  const b = e.target.closest('.qir'); if (!b || !cur) return;
+  if (b.dataset.ir === 'more') { setView('edit'); $('#c-ir').scrollIntoView({ behavior:'smooth', block:'center' }); return; }
+  pushHist(); setVal(K.ircab.id, +b.dataset.ir); renderIrs();
+};
+$('#qtg').onclick = (e) => { const b = e.target.closest('button'); if (!b || !cur) return; const k = K[b.dataset.k].id; pushHist(); setVal(k, cur.v[k] ? 0 : 1); };
+$('#qvol').onpointerdown = () => pushHist();
+$('#qvol').oninput = (e) => { setVal(K.volume.id, +e.target.value); knobs[K.volume.id]?.draw(); };
+$('#qvm').onclick = () => { histTick('qv'); setVal(K.volume.id, cur.v[K.volume.id] - 4); knobs[K.volume.id]?.draw(); };
+$('#qvp').onclick = () => { histTick('qv'); setVal(K.volume.id, cur.v[K.volume.id] + 4); knobs[K.volume.id]?.draw(); };
+
+/* ---- navegação do celular: Tocar / Ajustar / Biblioteca / Palco ---- */
+function setView(v) {
+  if (v === 'stage') { openStage(); return; }
+  if (v === 'lib') { toggleLib(!$('#lib').classList.contains('open')); return; }
+  document.body.dataset.v = v; toggleLib(false);
+  document.querySelectorAll('#bnav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  window.scrollTo({ top:0 });
+}
+$('#bnav').onclick = (e) => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); };
+
+function renderEditor() {
+  if (!cur) return;
+  $('#pname').value = cur.name; $('#ptag').value = cur.tag; $('#pnote').value = cur.note;
+  $('#pfav').textContent = cur.fav ? '★' : '☆'; $('#pfav').classList.toggle('on', !!cur.fav);
+  knobsInto('#k-vol', ['volume'], true);
+  knobsInto('#k-fx', ['time', 'space', 'mod']);
+  knobsInto('#k-tone', ['antifb', 'comp', 'bass', 'mid', 'treb']);
+  buildEq(); renderIrs(); onChange(); renderModes();
+  fillTags();
+}
+function onChange() {
+  const sections = [['#c-ir', '#sw-ir', 'sw1'], ['#c-fx', '#sw-fx', 'sw2'], ['#c-tone', '#sw-tone', 'sw3']];
+  for (const [card, sw, key] of sections) { const on = !!cur.v[K[key].id]; $(card).classList.toggle('off', !on); $(sw).checked = on; }
+  const fxNames = [modName(cur.v[K.mod.id]), spaceName(cur.v[K.space.id])].filter(Boolean).join(' + ') || 'nenhum';
+  const ir = cur.v[K.ircab.id];
+  const blocks = [['TOM', 'sw3', 'var(--tone)', 'EQ · comp · anti-fb'], ['EFEITOS', 'sw2', 'var(--fx)', fxNames], ['IR', 'sw1', 'var(--ir)', ir === 0 ? 'desligada' : irLabel(ir)]];
+  $('#chain').innerHTML = '<span class="lbl">Caminho do som</span>' + blocks.map(([n, key, col, sub]) => `<button class="blk ${cur.v[K[key].id] ? 'on' : ''}" data-k="${key}" style="--cc:${col}"><i></i>${n}<small>${esc(sub)}</small></button>`).join('<span class="arrow">→</span>') +
+    `<span class="arrow">→</span><span class="blk on" style="--cc:var(--vol)"><i></i>VOL <small>${cur.v[K.volume.id]}</small></span>`;
+  const b = $('#pbadge');
+  if (cur.tpl) { b.textContent = isMod() ? 'modelo · alterado' : 'modelo'; b.className = 'badge' + (isMod() ? ' mod' : ''); }
+  else if (!cur.id) { b.textContent = cur.slot != null && !isMod() ? 'do pedal' : 'não salvo na biblioteca'; b.className = 'badge' + (cur.slot != null && !isMod() ? '' : ' mod'); }
+  else { b.textContent = isMod() ? 'modificado' : 'salvo'; b.className = 'badge ' + (isMod() ? 'mod' : 'ok'); }
+  $('#psave').disabled = !!cur.id && !cur.tpl && !isMod();
+  $('#prevert').disabled = !isMod(); $('#pdel').disabled = !cur.id || !!cur.tpl;
+  eqRefresh(); updDevState(); updUndo(); renderStageVol(); renderQuick();
+}
+function updDevState() {
+  const dirty = dev && devSaved && dev.some((x, i) => x !== devSaved[i]);
+  $('#devdirty').textContent = demo ? 'demo: nada é enviado' : dirty ? '● mudanças não gravadas no pedal' : '';
+  $('#save').disabled = demo || !selfTestOk || !dirty;
+}
+$('#chain').onclick = (e) => { const b = e.target.closest('button.blk'); if (!b) return; const k = K[b.dataset.k].id; pushHist(); setVal(k, cur.v[k] ? 0 : 1); };
+for (const [sw, key] of [['#sw-ir', 'sw1'], ['#sw-fx', 'sw2'], ['#sw-tone', 'sw3']]) $(sw).onchange = (e) => { pushHist(); setVal(K[key].id, e.target.checked ? 1 : 0); };
+
+function renderIrs() {
+  const k = K.ircab.id;
+  const bk = BANKS[SLOT[target]];
+  $('#irs').innerHTML = Array.from({ length:9 }, (_, i) => `<button data-i="${i}" class="${i === cur.v[k] ? 'on' : ''} ${i === 0 ? '' : bk.irs.includes(i) ? 'inbank' : 'outbank'}" style="--bc:${bk.col}" title="${esc(irLabel(i))}"><b>${i === 0 ? 'OFF' : i}</b><small>${i === 0 ? 'sem IR' : esc(irLabel(i))}</small></button>`).join('');
+  $('#irlegend').innerHTML = `<i style="--bc:${bk.col}"></i>IRs do banco ${SLOT[target]} (${esc(bankName(target))}): ${bk.irs.join(', ')} · as outras ficam apagadas, mas continuam disponíveis`;
+  $('#irlab').textContent = cur.v[k] === 0 ? 'IR OFF' : 'IR ' + cur.v[k]; $('#irname').value = irNames[cur.v[k]] || ''; $('#irname').disabled = cur.v[k] === 0;
+}
+$('#irs').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; pushHist(); setVal(K.ircab.id, +b.dataset.i); renderIrs(); };
+$('#irslot').innerHTML = Array.from({ length:8 }, (_, i) => `<option value="${i + 1}">Slot ${i + 1}${Cube.IR_SLOT_VERIFIED.includes(i + 1) ? '' : ' (não conferido)'}</option>`).join('');
+
+/* ---- processamento e envio de uma IR (usado pelo arquivo avulso e pela biblioteca) ---- */
+function processWav(buf) {
+  const w = Cube.parseWav(buf), N = Cube.IR_SAMPLES;
+  let s = w.samples;
+  const need = Math.ceil(N * w.rate / 48000);
+  const e = s.reduce((a, x) => a + x * x, 0) || 1, ePct = Math.round(100 * s.slice(0, need).reduce((a, x) => a + x * x, 0) / e);
+  if (w.rate !== 48000) s = Cube.resample(s.slice(0, need + 80), w.rate, 48000, N);
+  s = Float32Array.from({ length:N }, (_, i) => s[i] || 0);
+  return { rate:w.rate, ms:Math.round(w.samples.length / w.rate * 1000 * 10) / 10, en:ePct, s };
+}
+let irConfirmed = false, irBusy = false;
+async function sendIR(slot, s, label, rate, opts = {}) {
+  if (demo || !out) throw new Error('conecte ao pedal para enviar IRs');
+  if (irBusy) throw new Error('já existe um envio em andamento');
+  if (!(Math.max(...Array.from(s, Math.abs)) > 0)) throw new Error('as primeiras ' + Cube.IR_SAMPLES + ' amostras do arquivo estão em silêncio');
+  if (!irConfirmed) {
+    const verified = Cube.IR_SLOT_VERIFIED.includes(slot);
+    if (!confirm(`Gravar “${label}” no slot ${slot} do pedal?\n\n• Isso SUBSTITUI a IR que está no slot ${slot}. Os próximos envios desta sessão não vão perguntar de novo.\n• O pedal usa só os primeiros ${Cube.IR_SAMPLES} pontos (≈10,7 ms a 48 kHz)${rate && rate !== 48000 ? '; este arquivo é de ' + rate + ' Hz e foi convertido para 48 kHz' : ''}.\n• O CubeSuite também grava um ajuste de tom que eu ainda não sei calcular; aqui ele vai zerado, então volume ou tom podem ficar um pouco diferentes.` + (verified ? '' : '\n• Este slot não foi conferido contra o CubeSuite.') + '\n\nContinuar?')) return null;
+    irConfirmed = true;
+  }
+  irBusy = true; const prog = $('#irprog');
+  // no celular, mantém a tela acesa durante a gravação (com a tela apagada o Chrome pausa o envio)
+  let wake = null; try { wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch {}
+  try {
+    const r = await sendSeq(Cube.irWrite(slot, s, 0.5), (i, n) => { prog.textContent = `enviando ${i + 1}/${n}…`; });
+    irNames[slot] = label.slice(0, 40); store.set('irNames', irNames);
+    slotAssign[slot] = (opts.libName || label).slice(0, 80); store.set('slotAssign', slotAssign);
+    prog.textContent = r.lost ? `enviado, mas ${r.lost} mensagem(ns) sem confirmação` : 'enviado';
+    if (cur && opts.select !== false) { pushHist(); setVal(K.ircab.id, slot); }   // já deixa a IR selecionada para ouvir
+    renderIrs(); onChange(); renderList();
+    return r;
+  } finally { irBusy = false; try { wake && wake.release(); } catch {} }
+}
+$('#irsend').onclick = () => { if (demo || !out) return toast('Conecte ao pedal para enviar IRs', true); $('#irfile').click(); };
+$('#irfile').onchange = async (e) => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  try {
+    const p = processWav(await file.arrayBuffer()), slot = +$('#irslot').value;
+    const r = await sendIR(slot, p.s, file.name.replace(/\.wav$/i, ''), p.rate);
+    if (r) toast(`IR enviada ao slot ${slot} e selecionada. Toque para ouvir.`);
+  } catch (err) { $('#irprog').textContent = ''; toast('Não enviei a IR: ' + err.message, true); log('IR: ' + err.message); }
+};
+
+/* ---- biblioteca de IRs (IndexedDB) ---- */
+let irlib = [], irTarget = +store.get('irTarget', 1), irFilter = 'all', irQuery = '', irDbOk = true;
+let slotAssign = store.get('slotAssign', {});
+const idb = {
+  db: null,
+  open() { return this.db || (this.db = new Promise((res, rej) => { const r = indexedDB.open('cube-editor', 1); r.onupgradeneeded = () => r.result.createObjectStore('irs', { keyPath:'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
+  async tx(mode, fn) { const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('irs', mode), st = t.objectStore('irs'); const q = fn(st); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); },
+  all() { return this.tx('readonly', s => s.getAll()); }, put(r) { return this.tx('readwrite', s => s.put(r)); }, del(id) { return this.tx('readwrite', s => s.delete(id)); },
+};
+async function loadIrLib() {
+  if (location.hash === '#irtab') return;
+  try { irlib = (await idb.all()) || []; } catch (e) { irDbOk = false; log('IndexedDB indisponível: ' + e); }
+  renderList();
+}
+function irFolder(file) {
+  const parts = (file.webkitRelativePath || '').split('/').filter(Boolean); parts.pop();
+  const rel = parts.length > 1 ? parts.slice(1) : parts;   // tira a pasta raiz escolhida
+  const clean = (t) => (t || '').replace(/^\s*\d+\s*-\s*/, '').trim();
+  return { cat:clean(rel[0]) || 'Sem categoria', sub:rel.slice(1).join(' / ') };
+}
+async function importIrFiles(files) {
+  const wavs = [...files].filter(f => /\.wav$/i.test(f.name)); if (!wavs.length) return toast('Nenhum arquivo .wav encontrado', true);
+  let ok = 0, bad = 0, i = 0;
+  for (const f of wavs) {
+    toast(`Importando ${++i}/${wavs.length}…`);
+    try {
+      const p = processWav(await f.arrayBuffer()), { cat, sub } = irFolder(f), name = f.name.replace(/\.wav$/i, '');
+      const rec = { id:`${cat}/${sub}/${name}|${p.rate}|${f.size}`, name, cat, sub, rate:p.rate, ms:p.ms, en:p.en, s:p.s };
+      const k = irlib.findIndex(x => x.id === rec.id); if (k >= 0) irlib[k] = rec; else irlib.push(rec);
+      if (irDbOk) await idb.put(rec).catch(() => { irDbOk = false; });
+      ok++;
+    } catch (e) { bad++; log('IR ignorada (' + f.name + '): ' + e.message); }
+  }
+  view.tab = 'ir'; renderList();
+  toast(`${ok} IR(s) importada(s)` + (bad ? `, ${bad} ignorada(s) (veja o log)` : '') + (irDbOk ? '' : ' — sem armazenamento: somem ao recarregar'), !ok);
+}
+function spark(s) {
+  const W = 56, H = 22, n = 56, g = Math.floor(s.length / n); let mx = 1e-9; const env = [];
+  for (let i = 0; i < n; i++) { let m = 0; for (let k = 0; k < g; k++) m = Math.max(m, Math.abs(s[i * g + k])); env.push(m); mx = Math.max(mx, m); }
+  const d = env.map((m, i) => `M${i + 0.5} ${H / 2 - m / mx * H / 2} V${H / 2 + m / mx * H / 2}`).join('');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${d}" stroke="var(--ir)" stroke-width="1" fill="none"/></svg>`;
+}
+function renderIrLib() {
+  const box = $('#list');
+  const haveKit = IRKIT.filter(k => irlib.some(r => r.name === k.name)).length;
+  if (!$('#kitbtn').disabled) $('#kitbtn').textContent = haveKit < 8 ? `★ Kit dos bancos: faltam ${8 - haveKit} de 8 IRs (importe a pasta Irs)` : (kitOnPedal() ? '★ Kit dos bancos já está no pedal (gravar de novo)' : '★ Gravar kit dos bancos no pedal (8 slots)');
+  $('#tslots').innerHTML = Array.from({ length:8 }, (_, i) => `<button data-s="${i + 1}" class="${i + 1 === irTarget ? 'on' : ''}" title="Slot ${i + 1}: ${esc(irLabel(i + 1))}"><span>${i + 1}</span><small>${esc(irShort(i + 1))}</small></button>`).join('');
+  const cats = [...new Set(irlib.map(r => r.cat))].sort();
+  if (irFilter !== 'all' && !cats.includes(irFilter)) irFilter = 'all';
+  $('#irchips').innerHTML = ['all', ...cats].map(c => `<button class="chip ${c === irFilter ? 'on' : ''}" data-c="${esc(c)}">${c === 'all' ? 'Todas' : esc(c)}</button>`).join('');
+  const q = irQuery.trim().toLowerCase();
+  const L = irlib.filter(r => (irFilter === 'all' || r.cat === irFilter) && (!q || (r.name + ' ' + r.cat + ' ' + r.sub).toLowerCase().includes(q))).sort((a, b) => (a.cat + a.sub + a.name).localeCompare(b.cat + b.sub + b.name));
+  if (!irlib.length) { box.innerHTML = '<div class="empty">Nenhuma IR ainda.<br>Use “Importar pasta…” e escolha a sua pasta <b>Irs</b>. As subpastas viram categorias.</div>'; return; }
+  if (!L.length) { box.innerHTML = '<div class="empty">Nada encontrado.</div>'; return; }
+  let last = null, html = '';
+  for (const r of L) {
+    const g = r.cat + (r.sub ? ' · ' + r.sub : '');
+    if (g !== last) { html += `<div class="grp">${esc(g)}</div>`; last = g; }
+    const inSlot = Object.entries(slotAssign).filter(([, n]) => n === r.name).map(([k]) => k);
+    html += `<div class="iri ${inSlot.length ? 'in' : ''}" data-id="${esc(r.id)}" title="Clique para gravar no slot ${irTarget}">${spark(r.s)}<div class="tx"><b>${esc(r.name)}</b><small>${r.rate / 1000} kHz${r.rate !== 48000 ? ' <span class="warnbadge">→ 48k</span>' : ''} · ${r.en}% da energia nos 512 pontos · nível ${lvlOf(r) >= 0 ? '+' : ''}${lvlOf(r).toFixed(0)} dB${inSlot.length ? ' · no slot ' + inSlot.join(', ') : ''}</small></div><button class="go">→ ${irTarget}</button><button class="ghost go" data-del title="Remover da biblioteca">✕</button></div>`;
+  }
+  box.innerHTML = html;
+}
+async function irListClick(e) {
+  const row = e.target.closest('.iri'); if (!row) return;
+  const r = irlib.find(x => x.id === row.dataset.id); if (!r) return;
+  if (e.target.closest('[data-del]')) {
+    if (!confirm('Remover “' + r.name + '” da biblioteca de IRs? (não mexe no pedal)')) return;
+    irlib = irlib.filter(x => x !== r); if (irDbOk) await idb.del(r.id).catch(() => {}); return renderList();
+  }
+  try {
+    const res = await sendIR(irTarget, r.s, shortName(r), r.rate, { libName:r.name });
+    if (res) toast(`“${shortName(r)}” gravada no slot ${irTarget} e selecionada. Toque para ouvir.`);
+  } catch (err) { toast('Não enviei a IR: ' + err.message, true); log('IR: ' + err.message); }
+}
+const shortName = (r) => r.name.replace(/^IR[_ ]/, '').replace(/_/g, ' ').slice(0, 40);
+
+/* nível de uma IR (dB, média de 200 Hz a 5 kHz dos 512 pontos): as suas IRs variam até ~30 dB entre si */
+function fft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; } }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang), h = len >> 1;
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < h; k++) {
+        const a = i + k, b = a + h, vr = re[b] * cr - im[b] * ci, vi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - vr; im[b] = im[a] - vi; re[a] += vr; im[a] += vi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+}
+function irLevelDb(s) {
+  const N = 8192, re = new Float64Array(N), im = new Float64Array(N);
+  for (let i = 0; i < Math.min(s.length, N); i++) re[i] = s[i];
+  fft(re, im);
+  let acc = 0, n = 0;
+  for (let k = Math.ceil(200 * N / 48000); k * 48000 / N < 5000; k++) { acc += re[k] * re[k] + im[k] * im[k]; n++; }
+  return 10 * Math.log10(acc / n + 1e-30);
+}
+const lvlOf = (r) => r._lvl ?? (r._lvl = irLevelDb(r.s));
+
+/* Kit sugerido para os 8 slots, escolhido por medição das IRs da pasta Irs (ver README no chat):
+   só IRs que mantêm >=93% da energia nos 512 pontos e perdem pouco timbre no corte, sem cópias,
+   com timbres diferentes; a ordem faz o 1º slot de cada pasta ser o melhor para o uso. */
+/* Organizado pelos bancos: A (Louvor) = IRs 1-3, B (Intros e solos) = 4-6, C (Bossa / pagode) = 7-8.
+   Os modos de cada banco já apontam para estas posições. */
+const IRKIT = [
+  { slot:1, name:'IR_Lucero_Fishman_44k_CSM2G', label:'Lucero · equilibrada', role:'A · ritmo' },
+  { slot:2, name:'AS_OM28_Matrix_44100B_CSM', label:'OM-28 · corpo e brilho', role:'A · solo no louvor' },
+  { slot:3, name:'IR_Lowden_Old_Lady_48k_M', label:'Lowden Old Lady · neutra', role:'A · dedilhado e oração' },
+  { slot:4, name:'IR_LowdenPB_KnK_44k_CSM', label:'Lowden K&K · brilhante', role:'B · solo com presença' },
+  { slot:5, name:'IR_McIlroy A30 new A_96k_8096_Match2', label:'McIlroy A30 · solo', role:'B · solo' },
+  { slot:6, name:'SC_McIlroy2_44100_Bld', label:'McIlroy A25c · encorpada', role:'B · introdução' },
+  { slot:7, name:'Eastman3_SANS_JF', label:'Eastman · corpo', role:'C · pagode e melodia' },
+  { slot:8, name:'IR_classical K&K_bip44100', label:'Classical K&K · nylon', role:'C · bossa' },
+];
+function kitPlan() {
+  const items = [], missing = [];
+  for (const k of IRKIT) { const rec = irlib.find(r => r.name === k.name); rec ? items.push({ ...k, rec, lvl:lvlOf(rec) }) : missing.push(k.name); }
+  const lv = items.map(i => i.lvl).sort((a, b) => a - b), target = lv.length ? (lv[(lv.length - 1) >> 1] + lv[lv.length >> 1]) / 2 : 0;
+  for (const i of items) {
+    let g = Math.max(-18, Math.min(12, target - i.lvl)); const pk = Math.max(...Array.from(i.rec.s, Math.abs));
+    if (pk * Math.pow(10, g / 20) > 0.98) g = 20 * Math.log10(0.98 / pk);
+    i.gain = g;
+  }
+  return { items, missing, target };
+}
+async function applyKit() {
+  const plan = kitPlan();
+  if (plan.missing.length) return toast(`Faltam ${plan.missing.length} IR(s) do kit na biblioteca. Importe a pasta Irs inteira. (veja o log)`, true), log('Kit: faltam ' + plan.missing.join(', '));
+  if (demo || !out) return toast('Conecte ao pedal para gravar o kit', true);
+  const lines = plan.items.map(i => `${i.slot}. ${i.label} — ${i.role}  (${i.gain >= 0 ? '+' : ''}${i.gain.toFixed(1)} dB)`).join('\n');
+  if (!confirm('Gravar o kit sugerido nos 8 slots do pedal?\n\n' + lines + '\n\n• Isso SUBSTITUI as IRs dos slots 1 a 8 (inclusive as de fábrica; o CubeSuite tem “Restaurar IR’s”).\n• O volume das 8 é nivelado pelo ganho indicado, para a troca de slot não dar salto de volume.\n• Leva uns 15 segundos; não mexa no pedal durante o envio.\n\nContinuar?')) return;
+  irConfirmed = true; const btn = $('#kitbtn'); btn.disabled = true;
+  try {
+    for (const i of plan.items) {
+      btn.textContent = `Gravando ${i.slot}/8…`;
+      const g = Math.pow(10, i.gain / 20), s = Float32Array.from(i.rec.s, x => x * g);
+      await sendIR(i.slot, s, i.label, i.rec.rate, { libName:i.rec.name, select:false });
+    }
+    toast('Kit gravado nos 8 slots. Troque o botão IR Cab para ouvir cada um.'); renderIrs(); onChange(); renderList();
+  } catch (err) { toast('O kit parou no meio: ' + err.message, true); log('Kit: ' + err.message); }
+  btn.disabled = false; renderList(); renderKitBar();
+}
+$('#tslots').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; irTarget = +b.dataset.s; store.set('irTarget', irTarget); renderList(); };
+$('#irchips').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) return; irFilter = b.dataset.c; renderList(); };
+$('#irq').oninput = (e) => { irQuery = e.target.value; renderList(); };
+$('#kitbtn').onclick = applyKit;
+if (/Android/i.test(navigator.userAgent)) { $('#irdirbtn').hidden = true; $('#irfilesbtn').textContent = 'Importar IRs (selecione vários arquivos)'; }
+$('#irdirbtn').onclick = () => $('#irdir').click(); $('#irfilesbtn').onclick = () => $('#irfiles').click();
+$('#irdir').onchange = (e) => { const f = [...e.target.files]; e.target.value = ''; importIrFiles(f); };
+$('#irfiles').onchange = (e) => { const f = [...e.target.files]; e.target.value = ''; importIrFiles(f); };
+loadIrLib();
+$('#irname').oninput = (e) => { const i = cur.v[K.ircab.id], v = e.target.value.trim(); if (v) irNames[i] = v; else delete irNames[i]; store.set('irNames', irNames); };
+$('#irname').onchange = () => { renderIrs(); onChange(); renderList(); };
+
+function chipName(f) { return f === 'all' ? 'Todos' : f === 'fav' ? '★ Favoritos' : f === 'tpl' ? 'Modelos' : (presets.find(p => (p.tag || '').trim().toLowerCase() === f)?.tag || f); }
+function fillTags() {
+  const tags = [...new Set(['Equilibrado', 'Intros e solos', 'Bossa', ...presets.map(p => (p.tag || '').trim()).filter(Boolean)])];
+  $('#tags').innerHTML = tags.map(t => `<option value="${esc(t)}">`).join('');
+}
+function itemHTML(p, i, opts = {}) {
+  const on = cur && cur.id === p.id && (!opts.set || view.pos === i || view.pos < 0);
+  return `<div class="it ${on ? 'on' : ''}" data-id="${esc(p.id)}" data-i="${i}" style="--tc:${tagColor(p.tag)}">
+    ${opts.set ? `<span class="n">${i + 1}</span>` : ''}<span class="sw"></span>
+    <div class="tx"><b>${esc(p.name)}</b><small>${esc(p.tag || 'sem categoria')} · ${esc(irText(p))}${p.note ? ' · ' + esc(p.note) : ''}</small></div>
+    ${opts.set ? `<div class="mini"><button data-mv="-1" title="Subir">▲</button><button data-mv="1" title="Descer">▼</button><button data-rm title="Tirar da setlist">✕</button></div>`
+      : p.tpl ? '' : `<button class="star ${p.fav ? 'on' : ''}" data-fav title="Favorito">${p.fav ? '★' : '☆'}</button>`}
+  </div>`;
+}
+function renderList() {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === view.tab));
+  $('#libtop-lib').hidden = view.tab !== 'lib'; $('#libtop-set').hidden = view.tab !== 'set'; $('#libtop-ir').hidden = view.tab !== 'ir';
+  document.querySelector('.libfoot').hidden = view.tab === 'ir';
+  if (view.tab === 'ir') return renderIrLib();
+  const box = $('#list');
+  if (view.tab === 'lib') {
+    const tags = [...new Set(presets.map(p => (p.tag || '').trim().toLowerCase()).filter(Boolean))];
+    const chips = ['all', 'fav', ...tags, 'tpl'];
+    if (!chips.includes(view.filter)) view.filter = 'all';
+    $('#chips').innerHTML = chips.map(f => `<button class="chip ${f === view.filter ? 'on' : ''}" data-f="${esc(f)}">${esc(chipName(f))}</button>`).join('');
+    const L = filtered();
+    if (!L.length) { box.innerHTML = `<div class="empty">${view.q ? 'Nada encontrado.' : view.filter === 'fav' ? 'Nenhum favorito ainda. Toque na ☆ de um preset.' : 'Biblioteca vazia.'}</div>`; return; }
+    const mine = L.filter(p => !p.tpl), tpl = L.filter(p => p.tpl);
+    box.innerHTML = (mine.length ? (view.filter === 'all' ? `<div class="grp">Meus presets · ${mine.length}</div>` : '') + mine.map((p, i) => itemHTML(p, i)).join('') : (view.filter === 'all' && !view.q ? '<div class="empty">Ainda não há presets seus. Ajuste o som e toque em “Salvar como novo”, ou use “Trazer A/B/C”.</div>' : ''))
+      + (tpl.length ? (() => { let last = null, h = ''; for (const p of tpl) { if (p.tag !== last) { h += `<div class="grp">Modelos · ${esc(p.tag)}</div>`; last = p.tag; } h += itemHTML(p, 0); } return h; })() : '');
+  } else {
+    $('#setSel').innerHTML = setlists.length ? setlists.map(s => `<option value="${esc(s.id)}" ${s.id === view.setlist ? 'selected' : ''}>${esc(s.name)} (${s.items.length})</option>`).join('') : '<option>— nenhuma setlist —</option>';
+    if (!curSet() && setlists.length) view.setlist = setlists[0].id;
+    $('#setRen').disabled = $('#setDel').disabled = $('#setAdd').disabled = !curSet();
+    const s = curSet();
+    if (!s) { box.innerHTML = '<div class="empty">Crie uma setlist com ＋ para montar a ordem das músicas de um show ou ensaio.</div>'; return; }
+    const L = s.items.map(findP);
+    box.innerHTML = L.length ? L.map((p, i) => p ? itemHTML(p, i, { set:true }) : '').join('') : '<div class="empty">Setlist vazia. Carregue um preset e toque em “Adicionar o preset atual”.</div>';
+  }
+}
+document.querySelector('.tabs').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; view.tab = b.dataset.t; view.pos = -1; renderList(); };
+$('#chips').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) return; view.filter = b.dataset.f; renderList(); };
+$('#q').oninput = (e) => { view.q = e.target.value; renderList(); };
+$('#list').onclick = (e) => {
+  if (view.tab === 'ir') return irListClick(e);
+  const it = e.target.closest('.it'); if (!it) return; const id = it.dataset.id, i = +it.dataset.i;
+  if (e.target.closest('[data-fav]')) return toggleFav(id);
+  const s = curSet();
+  if (e.target.closest('[data-mv]') && s) { const d = +e.target.closest('[data-mv]').dataset.mv, j = i + d; if (j < 0 || j >= s.items.length) return; [s.items[i], s.items[j]] = [s.items[j], s.items[i]]; if (view.pos === i) view.pos = j; persist(); renderList(); return; }
+  if (e.target.closest('[data-rm]') && s) { s.items.splice(i, 1); view.pos = -1; persist(); renderList(); return; }
+  loadPreset(findP(id), view.tab === 'set' ? i : null);
+};
+$('#setSel').onchange = (e) => { view.setlist = e.target.value; view.pos = -1; store.set('lastSetlist', view.setlist); renderList(); };
+$('#setNew').onclick = () => { const n = prompt('Nome da setlist', 'Ensaio'); if (!n) return; const s = { id:uid(), name:n.slice(0, 40), items:[] }; setlists.push(s); view.setlist = s.id; store.set('lastSetlist', s.id); persist(); renderList(); };
+$('#setRen').onclick = () => { const s = curSet(); if (!s) return; const n = prompt('Novo nome', s.name); if (n) { s.name = n.slice(0, 40); persist(); renderList(); } };
+$('#setDel').onclick = () => { const s = curSet(); if (!s || !confirm('Apagar a setlist “' + s.name + '”? Os presets continuam na biblioteca.')) return; setlists = setlists.filter(x => x !== s); view.setlist = setlists[0]?.id || null; persist(); renderList(); };
+$('#setAdd').onclick = () => {
+  const s = curSet(); if (!s) return;
+  let id = cur.id; if (!id || isMod()) { if (!cur.id || cur.tpl) { if (cur.tpl && !isMod()) id = cur.id; else id = saveAsNew().id; } else { savePreset(); id = cur.id; } }
+  s.items.push(id); persist(); renderList(); toast('Adicionado à setlist “' + s.name + '”');
+};
+
+/* ======================= palco ======================= */
+/* Palco: grade de caixinhas. Cada uma é um preset; um toque carrega no pedal. */
+let stageSrc = store.get('stageSrc', 'bank');
+function stageSources() {
+  const s = [{ id:'bank', name:'Modos do banco atual (' + SLOT[target] + ' · ' + bankName(target) + ')' }, { id:'ctx', name:'Lista atual' }];
+  if (presets.some(p => p.fav)) s.push({ id:'fav', name:'★ Favoritos' });
+  setlists.forEach(l => s.push({ id:'set:' + l.id, name:'Setlist · ' + l.name }));
+  if (presets.length) s.push({ id:'mine', name:'Todos os meus presets' });
+  [...new Set(presets.map(p => (p.tag || '').trim()).filter(Boolean))].forEach(t => s.push({ id:'cat:' + t.toLowerCase(), name:'Meus · ' + t }));
+  [...new Set(TEMPLATES.map(t => t.tag))].forEach(t => s.push({ id:'tpl:' + t, name:'Modelos · ' + t }));
+  s.push({ id:'alltpl', name:'Todos os modelos' });
+  return s;
+}
+function stageList(id) {
+  if (id === 'fav') return presets.filter(p => p.fav);
+  if (id === 'mine') return presets.slice();
+  if (id === 'alltpl') return TEMPLATES.slice();
+  if (id.startsWith('set:')) { const l = setlists.find(x => x.id === id.slice(4)); return l ? l.items.map(findP).filter(Boolean) : []; }
+  if (id.startsWith('cat:')) return presets.filter(p => (p.tag || '').trim().toLowerCase() === id.slice(4));
+  if (id.startsWith('tpl:')) return TEMPLATES.filter(t => t.tag === id.slice(4));
+  if (id === 'bank') return bankModes(SLOT[target]);
+  return ctx().list;
+}
+function stageCur() { const src = stageSources(); if (!src.some(s => s.id === stageSrc)) stageSrc = 'ctx'; return stageList(stageSrc); }
+function renderStage() {
+  if ($('#stage').hidden || !cur) return;
+  const src = stageSources(); if (!src.some(s => s.id === stageSrc)) stageSrc = 'ctx';
+  $('#st-src').innerHTML = src.map(s => `<option value="${esc(s.id)}" ${s.id === stageSrc ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  $('#st-banks').innerHTML = SLOT.map((n, i) => `<button class="${i === target ? 'on' : ''}" data-i="${i}" style="--bc:${BANKS[n].col}" title="Toque na mesma letra que você pisou no pedal (tecla ${n})"><b>${n}</b><span>${esc(bankName(i))}</span></button>`).join('');
+  const L = stageList(stageSrc);
+  // a caixinha acende se é o preset aberto, ou se tem exatamente o som que está no slot (ao trocar de banco)
+  const isOn = (p) => cur.id === p.id || (cur.slot != null && p.v.join() === cur.v.join());
+  $('#st-grid').innerHTML = L.length ? L.map((p, i) => `<button class="tile ${isOn(p) ? 'on' : ''}" data-i="${i}" style="--tc:${tagColor(p.tag)}"><span class="num">${i < 9 ? i + 1 : ''}</span>${esc(p.name)}<small>${esc(p.tag || 'sem categoria')} · ${esc(irText(p))}</small></button>`).join('')
+    : '<div class="empty" style="grid-column:1/-1">Nenhuma caixinha nesta lista. Escolha outra no menu acima.</div>';
+  $('#st-name').textContent = cur.name; $('#st-tag').textContent = [cur.tag, cur.note].filter(Boolean).join(' · ');
+  renderStageVol();
+  document.querySelector('.tile.on')?.scrollIntoView({ block:'nearest' });
+}
+function renderStageVol() {
+  if ($('#stage').hidden || !cur) return;
+  $('#st-volr').value = cur.v[K.volume.id]; $('#st-volv').textContent = cur.v[K.volume.id];
+  const fx = [modName(cur.v[K.mod.id]), spaceName(cur.v[K.space.id])].filter(Boolean).join('+') || 'nenhum', ir = cur.v[K.ircab.id];
+  $('#st-tg').innerHTML = [['TOM', 'sw3', 'var(--tone)', 'EQ · comp'], ['EFEITOS', 'sw2', 'var(--fx)', fx], ['IR', 'sw1', 'var(--ir)', ir === 0 ? 'desligada' : irShort(ir)]]
+    .map(([n, key, col, sub]) => `<button class="${cur.v[K[key].id] ? 'on' : ''}" data-k="${key}" style="--cc:${col}">${n}<small>${esc(sub)}</small></button>`).join('');
+}
+function stagePick(i) { const L = stageList(stageSrc); if (!L[i]) return; loadPreset(L[i], null); }
+function stageNav(d) {
+  const L = stageList(stageSrc); if (!L.length) return;
+  let i = L.findIndex(p => cur && p.id === cur.id); i = i < 0 ? (d > 0 ? 0 : L.length - 1) : (i + d + L.length) % L.length; loadPreset(L[i], null);
+}
+$('#st-grid').onclick = (e) => { const t = e.target.closest('.tile'); if (t) stagePick(+t.dataset.i); };
+/* O pedal NÃO avisa qual slot está ativo (testado), então o Palco acompanha com um toque: a mesma letra que você pisou */
+function stageBank(i) {
+  if (!dev || i === target) return;
+  loadSlot(i); if (stageSrc !== 'bank') { stageSrc = 'bank'; store.set('stageSrc', 'bank'); renderStage(); }
+}
+$('#st-banks').onclick = (e) => { const b = e.target.closest('button'); if (b) stageBank(+b.dataset.i); };
+$('#st-src').onchange = (e) => { stageSrc = e.target.value; store.set('stageSrc', stageSrc); renderStage(); };
+$('#st-tg').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const k = K[b.dataset.k].id; pushHist(); setVal(k, cur.v[k] ? 0 : 1); };
+$('#st-volr').onpointerdown = () => pushHist();
+$('#st-volr').oninput = (e) => { setVal(K.volume.id, +e.target.value); knobs[K.volume.id]?.draw(); };
+$('#st-vm').onclick = () => { histTick('stv'); setVal(K.volume.id, cur.v[K.volume.id] - 4); };
+$('#st-vp').onclick = () => { histTick('stv'); setVal(K.volume.id, cur.v[K.volume.id] + 4); };
+function openStage() { if (!cur) return; $('#stage').hidden = false; renderStage(); }
+$('#stageBtn').onclick = openStage; $('#st-close').onclick = () => $('#stage').hidden = true;
+
+/* ======================= ações ======================= */
+$('#pname').oninput = (e) => { cur.name = e.target.value; onChange(); };
+$('#ptag').oninput = (e) => { cur.tag = e.target.value; onChange(); };
+$('#pnote').oninput = (e) => { cur.note = e.target.value; onChange(); };
+$('#pfav').onclick = () => cur.id && !cur.tpl ? toggleFav(cur.id) : toast('Salve o preset antes de favoritar');
+$('#psave').onclick = savePreset; $('#psaveas').onclick = () => saveAsNew(cur.id && !cur.tpl ? ' (cópia)' : '');
+$('#prevert').onclick = () => { pushHist(); cur.v = base.slice(); Object.assign(cur, baseMeta); applyAll(); renderEditor(); };
+$('#pdel').onclick = deletePreset;
+$('#pfromdev').onclick = () => { if (!dev) return; loadSlot(target, true); toast('Voltou ao que está gravado no slot ' + SLOT[target] + ' do pedal'); };
+$('#prev').onclick = () => nav(-1); $('#next').onclick = () => nav(1);
+$('#undo').onclick = undo; $('#redo').onclick = redo;
+$('#newP').onclick = newPreset;
+$('#fromDev').onclick = () => {
+  if (!dev) return;
+  const stamp = new Date().toLocaleDateString('pt-BR');
+  for (let s = 2; s >= 0; s--) presets.unshift({ id:uid(), name:(slotNames[s] || 'Pedal ' + SLOT[s]) + ' · ' + stamp, tag:'', note:'Copiado do slot ' + SLOT[s], fav:false, v:C.map(c => dev[16 * s + c.id]) });
+  persist(); view.tab = 'lib'; view.filter = 'all'; renderList(); toast('Slots A, B e C copiados para a biblioteca');
+};
+const download = (name, obj) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type:'application/json' })); a.download = name; a.click(); };
+const f32b64 = (f) => { let s = ''; const u = new Uint8Array(f.buffer, f.byteOffset, f.byteLength); for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); };
+const b64f32 = (t) => { const s = atob(t), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return new Float32Array(u.buffer); };
+$('#exp').onclick = () => download('cube-biblioteca-' + new Date().toISOString().slice(0, 10) + '.json', { app:'cube-editor', kind:'library', version:3, presets, setlists, irNames, slotNames, slotAssign,
+  irs:irlib.map(r => ({ id:r.id, name:r.name, cat:r.cat, sub:r.sub, rate:r.rate, ms:r.ms, en:r.en, s:f32b64(r.s) })) });
+$('#imp').onclick = () => $('#file').click();
+$('#file').onchange = async (e) => {
+  try {
+    const j = JSON.parse(await e.target.files[0].text());
+    if (j.kind !== 'library' || !Array.isArray(j.presets)) throw 0;
+    const have = new Set(presets.map(p => p.id)); let n = 0;
+    for (const p of j.presets) { if (!p || !Array.isArray(p.v) || p.v.length !== 13) continue; const id = p.id && !have.has(p.id) ? p.id : uid(); presets.push({ id, name:String(p.name || 'Sem nome').slice(0, 40), tag:String(p.tag || '').slice(0, 24), note:String(p.note || '').slice(0, 140), fav:!!p.fav, ir:String(p.ir || '').slice(0, 80), v:p.v.map((x, k) => Math.max(0, Math.min(C[k].max, x | 0))) }); have.add(id); n++; }
+    for (const s of j.setlists || []) if (s && Array.isArray(s.items)) setlists.push({ id:uid(), name:String(s.name || 'Setlist').slice(0, 40), items:s.items.filter(id => have.has(id)) });
+    Object.assign(irNames, j.irNames || {}); store.set('irNames', irNames); Object.assign(slotAssign, j.slotAssign || {}); store.set('slotAssign', slotAssign);
+    let ni = 0;
+    for (const r of j.irs || []) {
+      try {
+        const s = b64f32(r.s); if (s.length !== Cube.IR_SAMPLES || !r.id) continue;
+        const rec = { id:String(r.id), name:String(r.name || 'IR').slice(0, 80), cat:String(r.cat || 'Sem categoria').slice(0, 60), sub:String(r.sub || '').slice(0, 80), rate:+r.rate || 48000, ms:+r.ms || 0, en:+r.en || 0, s };
+        const k = irlib.findIndex(x => x.id === rec.id); if (k >= 0) irlib[k] = rec; else irlib.push(rec);
+        if (irDbOk) await idb.put(rec).catch(() => { irDbOk = false; });
+        ni++;
+      } catch {}
+    }
+    persist(); renderList(); renderIrs(); toast(n + ' presets' + (ni ? ' e ' + ni + ' IRs' : '') + ' importados');
+  } catch { toast('Arquivo inválido', true); }
+  e.target.value = '';
+};
+$('#save').onclick = () => {
+  if (!selfTestOk || demo) return;
+  if (!confirm('Gravar os slots A, B e C no pedal? Um backup do que está gravado hoje é baixado antes.')) return;
+  download('cube-backup-pedal-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json', { app:'cube-editor', kind:'device', data:devSaved });
+  const msg = Cube.buildDump(dev, Cube.HDR_SAVE); out.send(msg); log('SAVE enviado (' + msg.length + ' bytes)');
+  setTimeout(() => { out.send(Cube.REQUEST_PRESETS); toast('Gravado; conferindo no pedal…'); }, 400);
+};
+$('#connect').onclick = connect; $('#demo').onclick = startDemo;
+const toggleLib = (on) => { $('#lib').classList.toggle('open', on); $('#scrim').classList.toggle('open', on); };
+$('#libbtn').onclick = () => toggleLib(!$('#lib').classList.contains('open')); $('#scrim').onclick = () => toggleLib(false);
+
+document.addEventListener('keydown', (e) => {
+  const t = e.target, typing = /INPUT|TEXTAREA|SELECT/.test(t.tagName);
+  const mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
+  if (mod && key === 's') { e.preventDefault(); if (cur) savePreset(); return; }
+  if (typing) return;
+  if (mod && key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && key === 'y') { e.preventDefault(); redo(); return; }
+  const stage = !$('#stage').hidden;
+  if (stage && e.key === 'Escape') { $('#stage').hidden = true; return; }
+  const onKnob = t.closest && t.closest('.knob');
+  if (stage && /^[1-9]$/.test(e.key) && !mod) { e.preventDefault(); stagePick(+e.key - 1); return; }
+  if (stage && /^[abc]$/i.test(e.key) && !mod) { e.preventDefault(); stageBank('abc'.indexOf(e.key.toLowerCase())); return; }
+  const go = (d) => { e.preventDefault(); stage ? stageNav(d) : nav(d); };
+  if (e.key === 'PageDown' || e.key === ']' || (stage && !onKnob && ['ArrowRight', 'ArrowDown', ' '].includes(e.key))) go(1);
+  else if (e.key === 'PageUp' || e.key === '[' || (stage && !onKnob && ['ArrowLeft', 'ArrowUp'].includes(e.key))) go(-1);
+});
+
+document.body.dataset.v = 'play'; $('#ver').textContent = APP_VERSION;
+// app instalável/offline só quando publicado em HTTPS (no PC, via localhost, fica sem cache para ver mudanças na hora)
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+renderSlots(); renderList(); updUndo();
+
+/* ======================= modos de teste (#demo, #stage, #selftest) ======================= */
+if (/^#(demo|stage|selftest|irtab)/.test(location.hash)) {
+  startDemo();
+  if (location.hash === '#irtab') {
+    const mk = (name, cat, sub, rate, en) => ({ id:cat + sub + name, name, cat, sub, rate, ms:42.7, en, s:Float32Array.from({ length:512 }, (_, i) => Math.sin(i * 0.35) * Math.exp(-i / (60 + name.length * 9)) * (i ? 1 : 0.8)) });
+    irlib = [mk('Eastman3JF', 'bossa', 'eastman', 48000, 87), mk('AS_OM28_Matrix_44100', 'bossa', 'Martin OM-28 Fishman', 44100, 88), mk('IR_Cordoba_Fusion_Orchestra_CE', 'equlibrado', 'Cordoba Fusion', 96000, 98), mk('McIlroy_96k_2048', 'Intros e solos', 'McIlroy A30', 96000, 97), mk('McIlroy_96k_8096_Bld', 'Intros e solos', 'McIlroy A30', 96000, 61)];
+    slotAssign = { 8:'Eastman3JF', 7:'AS_OM28_Matrix_44100' }; irTarget = 7; view.tab = 'ir'; renderList();
+  }
+  if (location.hash.startsWith('#demo-kit')) {   // só para capturas de tela: nomes do kit em memória, nada é salvo
+    IRKIT.forEach(k => irNames[k.slot] = k.label);
+    loadPreset(TEMPLATES.find(t => t.id === 'tpl-a-ritmo'), null);
+    if (location.hash === '#demo-kit-edit') setView('edit');
+  }
+  if (location.hash === '#stage') { view.filter = 'tpl'; renderList(); loadPreset(TEMPLATES[1], null); openStage(); }
+  if (location.hash === '#selftest') (async () => {
+    const r = []; const ok = (n, c) => { r.push((c ? 'PASS ' : 'FAIL ') + n); document.body.dataset.selftest = r.join(' | '); try { fetch('/__result', { method:'POST', body:r.join('\n') + '\n--LOG--\n' + $('#log').textContent }); } catch {} };
+    try {
+      { let acks = 0; const t0 = performance.now(); out = { send:() => { setTimeout(() => { acks++; onAck(); }, 1); } }; demo = false;
+        const r0 = await sendSeq(Array.from({ length:10 }, () => [0xf0, 0xf7]), null); out = null; demo = true;
+        ok('envio em sequência: 10 mensagens, nenhuma perdida (diag: ' + acks + ' acks, ' + Math.round(performance.now() - t0) + ' ms)', r0.lost === 0 && acks === 10); }
+      { const msgs = Cube.irWrite(3, Float32Array.from({ length:512 }, (_, i) => i ? 0.1 : 0.5), 0.5); let acks = 0, sends = 0; const marks = [];
+        out = { send:(m) => { sends++; marks.push(m.length); setTimeout(() => { acks++; onAck(); }, 1); } }; demo = false;
+        const r1 = await sendSeq(msgs, null); out = null; demo = true;
+        ok('gravação de IR completa em sequência (diag: ' + msgs.length + ' msgs, ' + sends + ' envios, ' + acks + ' acks, ' + r1.lost + ' perdidas)', r1.lost === 0 && sends === msgs.length); }
+      // regressão: uma confirmação atrasada de um comando solto não pode ser creditada à sequência seguinte
+      { const m5 = []; out = { send:(m) => { m5.push(m); setTimeout(onAck, 1); } }; demo = false;
+        queue(5, 77);   // comando solto: sua confirmação chega 1 ms depois, já durante a sequência abaixo
+        const r5 = await sendSeq(Array.from({ length:12 }, () => [0xf0, 0xf7]), null); const extra = m5.length; out = null; demo = true;
+        ok('confirmação atrasada de comando solto não duplica a sequência (diag: ' + extra + ' envios, ' + r5.lost + ' perdidas)', r5.lost === 0 && extra === 13); }
+      { const res = []; out = { send:() => { setTimeout(onAck, 1); } }; demo = false;
+        for (let sl = 1; sl <= 8; sl++) { const r2 = await sendSeq(Cube.irWrite(sl, Float32Array.from({ length:512 }, (_, i) => i ? 0.1 : 0.5), 0.5), null); res.push(r2.lost); }
+        out = null; demo = true; ok('gravação de IR nos 8 slots seguidos (diag: perdas por slot ' + res.join(',') + ')', res.every(x => x === 0)); }
+      newPreset(); cur.name = 'T1'; setVal(5, 77); const p = saveAsNew(); ok('salvar', presets[0] === p && p.name === 'T1' && p.v[5] === 77);
+      pushHist(); setVal(5, 10); ok('modificado', isMod()); undo(); ok('desfazer', cur.v[5] === 77); redo(); ok('refazer', cur.v[5] === 10);
+      savePreset(); ok('atualizar', findP(p.id).v[5] === 10 && !isMod());
+      loadPreset(TEMPLATES[0]); ok('carregar modelo', cur.v[0] === TEMPLATES[0].v[0] && dev[16 * target] === TEMPLATES[0].v[0]);
+      view.filter = 'tpl'; nav(1); ok('navegar', cur.id === TEMPLATES[1].id); nav(-1); nav(-1); ok('navegar volta', cur.id === TEMPLATES[TEMPLATES.length - 1].id);
+      const s = { id:uid(), name:'Show', items:[TEMPLATES[2].id, p.id, TEMPLATES[2].id] }; setlists.push(s);
+      view.tab = 'set'; view.setlist = s.id; renderList(); loadPreset(TEMPLATES[2], 0); nav(1); ok('setlist próximo', cur.id === p.id); nav(1); ok('setlist repetido', cur.id === TEMPLATES[2].id && view.pos === 2); nav(1); ok('setlist volta ao início', view.pos === 0);
+      loadSlot(0, true); ok('voltar ao pedal', cur.v.join() === C.map(c => devSaved[c.id]).join() && dev.join() === devSaved.join());
+      ok('slot B', (loadSlot(1), cur.v[0] === TEMPLATES.find(t => t.bank === 'B').v[0] && target === 1));
+      pushHist(); setVal(K.sw2.id, 0); ok('seção desligada', $('#c-fx').classList.contains('off'));
+      const d = Cube.parseDump(Cube.buildDump(dev, Cube.HDR_READ)); ok('dump ida e volta', d.checksumOk && d.data.join() === dev.join());
+      ok('mensagem param', Cube.paramMsg(5, 67).length === 21);
+      ok('modelos válidos (13 valores dentro das faixas, ids únicos)', TEMPLATES.every(t => t.v.length === 13 && t.v.every((x, k) => Number.isInteger(x) && x >= 0 && x <= C[k].max)) && new Set(TEMPLATES.map(t => t.id)).size === TEMPLATES.length);
+      ok('zonas: mod e space', ZONES.mod.text(7) === 'desligado' && ZONES.mod.text(0).startsWith('chorus 100') && ZONES.mod.text(15).startsWith('trêmolo 100') && ZONES.space.text(15) === 'desligado' && ZONES.space.text(0).startsWith('reverb 100') && ZONES.space.text(31).startsWith('delay 100') && ZONES.space.text(13).startsWith('reverb') && ZONES.space.text(17).startsWith('delay'));
+      ok('nenhum modo dos bancos usa chorus (trocado por trêmolo)', TEMPLATES.filter(t => t.bank).every(t => t.v[K.mod.id] >= 7));
+      ok('oração e introdução usam trêmolo', ['tpl-a-oracao', 'tpl-b-intro'].every(id => modName(TEMPLATES.find(t => t.id === id).v[K.mod.id]) === 'trêmolo'));
+      // bancos A/B/C: modos, IRs do banco, destaque
+      { ok('bancos: 4 modos em cada banco', ['A', 'B', 'C'].every(L => TEMPLATES.filter(t => t.bank === L).length === 4));
+        ok('bancos: cada modo usa uma IR do próprio banco', TEMPLATES.filter(t => t.bank).every(t => BANKS[t.bank].irs.includes(t.v[K.ircab.id])));
+        ok('bancos: kit cobre exatamente as IRs dos bancos', IRKIT.map(k => k.slot).join() === [...BANKS.A.irs, ...BANKS.B.irs, ...BANKS.C.irs].join());
+        loadSlot(2); ok('trocar para o banco C', target === 2 && document.querySelector('.bank.on')?.dataset.i === '2' && /pise em <b>C<\/b>/.test($('#bankhint').innerHTML));
+        ok('banco C mostra os seus 4 modos + salvar', document.querySelectorAll('#modes .mode:not(.add)').length === bankModes('C').length && $('#modeAdd') != null);
+        document.querySelector('#modes .mode[data-id="tpl-c-pagode"]').click();
+        ok('tocar no modo carrega no slot C com a IR do modo', cur.id === 'tpl-c-pagode' && dev[16 * 2 + K.ircab.id] === 7 && document.querySelector('#modes .mode.on')?.dataset.id === 'tpl-c-pagode');
+        ok('IR card destaca só as IRs do banco C', [...document.querySelectorAll('#irs button.inbank')].map(b => b.dataset.i).join() === '7,8');
+        ok('controles rápidos mostram as IRs do banco', [...document.querySelectorAll('#qirs .qir[data-ir]')].filter(b => b.dataset.ir !== 'more').map(b => b.dataset.ir).join() === '7,8');
+        document.querySelector('#qirs .qir[data-ir="8"]').click(); ok('trocar IR pelos controles rápidos', cur.v[K.ircab.id] === 8);
+        const n0 = presets.length; $('#modeAdd').click(); ok('salvar como modo do banco C', presets.length === n0 + 1 && presets[0].bank === 'C' && bankModes('C').includes(presets[0]));
+        const mine = presets[0]; presets = presets.filter(x => x !== mine); persist();
+        setView('edit'); ok('navegação: Ajustar', document.body.dataset.v === 'edit'); setView('play'); ok('navegação: Tocar', document.body.dataset.v === 'play');
+        loadSlot(0); }
+      { irNames[5] = 'Minha IR'; ok('IR por nome exato (presets seus)', irFor({ ir:'Minha IR' }).slot === 5 && irFor({ ir:'não existe' }).msg); delete irNames[5]; }
+      { cur.v[K.ircab.id] = 5; loadPreset(TEMPLATES.find(t => t.id === 'tpl-seco')); ok('modelo mantém a IR selecionada', cur.v[K.ircab.id] === 5);
+        loadPreset(TEMPLATES.find(t => t.id === 'tpl-sem-ir')); ok('modelo "Sem IR" desliga a IR', cur.v[K.ircab.id] === 0 && cur.v[K.sw1.id] === 0); }
+      // Palco: caixinhas
+      { loadSlot(2); stageSrc = 'bank'; $('#stage').hidden = false; renderStage();
+        const tiles = document.querySelectorAll('#st-grid .tile'); ok('palco: caixinhas = modos do banco C', tiles.length === 4);
+        stagePick(1); ok('palco: tocar na caixinha carrega o preset', cur.id === 'tpl-c-voz' && document.querySelectorAll('#st-grid .tile.on').length === 1);
+        stageNav(1); ok('palco: próximo', cur.id === 'tpl-c-pagode'); stageNav(1); stageNav(1); ok('palco: volta ao início', cur.id === 'tpl-c-bossa');
+        const v0 = cur.v[K.volume.id]; $('#st-vp').click(); ok('palco: volume +4', cur.v[K.volume.id] === v0 + 4);
+        const sw = cur.v[K.sw2.id]; document.querySelector('#st-tg button[data-k="sw2"]').click(); ok('palco: liga/desliga bloco', cur.v[K.sw2.id] === 1 - sw);
+        ok('palco: fontes incluem o banco atual e os modelos', stageSources()[0].id === 'bank' && stageSources().some(s => s.id === 'tpl:Louvor'));
+        ok('palco: botões A/B/C no topo', document.querySelectorAll('#st-banks button').length === 3 && document.querySelector('#st-banks button.on')?.dataset.i === '2');
+        document.querySelector('#st-banks button[data-i="1"]').click();
+        ok('palco: tocar em B troca o banco e mostra os modos de B', target === 1 && document.querySelectorAll('#st-grid .tile').length === 4 && document.querySelector('#st-grid .tile')?.textContent.includes('Introdução'));
+        document.dispatchEvent(new KeyboardEvent('keydown', { key:'c' }));
+        ok('palco: tecla C troca para o banco C', target === 2 && document.querySelector('#st-banks button.on')?.dataset.i === '2');
+        stageSrc = 'tpl:Louvor'; renderStage(); document.dispatchEvent(new KeyboardEvent('keydown', { key:'a' }));
+        ok('palco: trocar de banco volta para os modos do banco', target === 0 && stageSrc === 'bank');
+        $('#stage').hidden = true; stageSrc = 'bank'; loadSlot(0); }
+      // fila: simula o pedal confirmando cada mensagem e confere que nada se perde
+      { const sentMsgs = []; const fakeOut = { send:(m) => { sentMsgs.push(m); setTimeout(onAck, 1); } };
+        out = fakeOut; demo = false; loadPreset(TEMPLATES[1]);
+        await new Promise(r => setTimeout(r, 400));
+        ok('fila manda os 13 parâmetros', sentMsgs.length === 13 && sentMsgs[sentMsgs.length - 1][9] === 16 * target + 12);
+        out = null; demo = true; }
+      // biblioteca de IRs: WAV de 96 kHz -> 512 pontos a 48 kHz, gravado e lido do IndexedDB
+      { const wavBuf = (rate, n, f) => { const dv = new DataView(new ArrayBuffer(44 + n * 3)); const tg = (o, t) => [...t].forEach((c, i) => dv.setUint8(o + i, c.charCodeAt(0)));
+          tg(0, 'RIFF'); dv.setUint32(4, 36 + n * 3, true); tg(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, rate, true); dv.setUint32(28, rate * 3, true); dv.setUint16(32, 3, true); dv.setUint16(34, 24, true); tg(36, 'data'); dv.setUint32(40, n * 3, true);
+          for (let i = 0; i < n; i++) { const v = Math.round(f(i) * 8388607) & 0xffffff; dv.setUint8(44 + i * 3, v & 255); dv.setUint8(45 + i * 3, (v >> 8) & 255); dv.setUint8(46 + i * 3, (v >> 16) & 255); } return dv.buffer; };
+        const p96 = processWav(wavBuf(96000, 4096, i => 0.5 * Math.sin(2 * Math.PI * 1000 * i / 96000) * Math.exp(-i / 800)));
+        ok('IR 96 kHz vira 512 pontos', p96.s.length === 512 && p96.rate === 96000 && p96.en > 90);
+        ok('IR 96 kHz mantém a frequência', Math.abs(p96.s[48] - 0.5 * Math.sin(2 * Math.PI * 1000 * 48 / 48000) * Math.exp(-96 / 800)) < 0.01);
+        const rec = { id:'t/t/teste|48000|1', name:'teste', cat:'T', sub:'', rate:48000, ms:1, en:100, s:p96.s };
+        let idbOk = false; try {
+          const lim = new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), 2500));
+          await Promise.race([(async () => { await idb.put(rec); const all = await idb.all(); idbOk = all.some(x => x.id === rec.id && x.s.length === 512 && Math.abs(x.s[10] - p96.s[10]) < 1e-9); await idb.del(rec.id); })(), lim]);
+        } catch (e) { log('idb: ' + e); }
+        ok('IndexedDB guarda e lê', idbOk);
+        ok('exportar/importar IR (base64)', b64f32(f32b64(p96.s)).every((x, i) => x === p96.s[i]));
+        cur.v[K.ircab.id] = 1;   // parte de outra IR, para a seleção da IR 3 precisar ser enviada
+        const sent = []; out = { send:(m) => { sent.push(m); setTimeout(onAck, 1); } }; demo = false; irConfirmed = true;
+        const rr = await sendIR(3, p96.s, 'teste'); out = null; demo = true; ok('envio de IR: nenhuma mensagem perdida', rr.lost === 0);
+        ok('envio de IR: 40 mensagens, a 40ª é a confirmação 09 01', sent.length >= 40 && sent[39][3] === 9 && sent[39][4] === 1);
+        ok('envio de IR: depois seleciona a IR no pedal', sent.length === 41 && sent[40][9] === 16 * target + K.ircab.id && sent[40][17] === 3);
+        ok('envio de IR: guarda nome do slot', slotAssign[3] === 'teste'); delete slotAssign[3]; delete irNames[3]; store.set('slotAssign', slotAssign); store.set('irNames', irNames);
+      }
+      // nível de IR e kit sugerido
+      { ok('nível de IR: impulso de 0,5 vale -6 dB', Math.abs(irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0)) + 6.02) < 0.1);
+        ok('nível de IR: dobrar a amplitude soma 6 dB', Math.abs(irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 1 : 0)) - irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0)) - 6.02) < 0.1);
+        const sLib = irlib, sAssign = slotAssign, sNames = { ...irNames }, sConfirm = window.confirm;
+        irlib = IRKIT.map((k, n) => ({ id:'kit' + n, name:k.name, cat:'x', sub:'', rate:48000, ms:1, en:99, s:Float32Array.from({ length:512 }, (_, i) => (i === 0 ? 0.9 : 0.3 * Math.sin(i * (0.1 + n * 0.07)) * Math.exp(-i / 90)) * (1 + n * 0.4)) }));
+        const plan = kitPlan();
+        ok('kit: plano tem 8 itens, sem faltas, ganhos dentro dos limites', plan.items.length === 8 && plan.missing.length === 0 && plan.items.every(i => i.gain >= -18 && i.gain <= 12 && Math.max(...Array.from(i.rec.s, Math.abs)) * Math.pow(10, i.gain / 20) <= 0.9801));
+        const kitSent = []; out = { send:(m) => { kitSent.push(m); setTimeout(onAck, 1); } }; demo = false; window.confirm = () => true;
+        await applyKit(); out = null; demo = true; window.confirm = sConfirm;
+        ok('kit: 8 gravações completas (8 x 40 mensagens)', kitSent.length === 320);
+        ok('kit: nomes dos slots e IR de origem guardados', IRKIT.every(k => irNames[k.slot] === k.label && slotAssign[k.slot] === k.name));
+        ok('kit: não troca o botão de IR do preset aberto', !kitSent.some(m => m[3] === 9 && m[4] === 0x49 && m[9] >= 0 && m[9] < 16 && m[17] !== undefined && m.length === 21 && m[8] === 2 && m[13] === 0x18));
+        irlib = sLib; slotAssign = sAssign; for (const k in irNames) delete irNames[k]; Object.assign(irNames, sNames); store.set('irNames', irNames); store.set('slotAssign', slotAssign); }
+      presets = presets.filter(x => x.id !== p.id); setlists = setlists.filter(x => x !== s); persist();
+    } catch (err) { r.push('FAIL exceção: ' + err.message); }
+    document.body.dataset.selftest = r.join(' | ');
+    try { fetch('/__result', { method:'POST', body:r.join('\n') + '\nDONE\n--LOG--\n' + $('#log').textContent }); } catch {}
+  })();
+}
+</script>
+</body>
+</html>
