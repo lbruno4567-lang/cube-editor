@@ -163,6 +163,28 @@
   .bank b { font-size:28px; line-height:1; color:var(--bc); font-weight:900; }
   .bank span { font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
   .bank.on { background:color-mix(in srgb, var(--bc) 22%, var(--s1)); border-color:var(--bc); box-shadow:0 0 0 3px color-mix(in srgb, var(--bc) 30%, transparent); }
+  .stylecard { background:var(--s1); border:1px solid var(--line); border-radius:var(--r); padding:12px; margin-bottom:12px; }
+  .sc-head { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; margin-bottom:10px; }
+  .sc-title { display:flex; flex-direction:column; min-width:0; } .sc-title small { font-size:11px; color:var(--faint); text-transform:uppercase; letter-spacing:1px; }
+  .sc-title b { font-size:20px; } .sc-title span { color:var(--dim); font-size:12px; }
+  .sc-act { display:flex; gap:6px; flex-wrap:wrap; }
+  .bank span { display:flex; flex-direction:column; white-space:normal; } .bank span strong { font-size:15px; } .bank span small { color:var(--dim); font-weight:500; font-size:11.5px; }
+  .stylelib { margin-top:14px; } .sl-head { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin:0 2px 6px; }
+  .stylegrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr)); gap:10px; margin-bottom:6px; }
+  .style { position:relative; text-align:left; padding:13px 14px; border-radius:16px; background:var(--s1); border:2px solid var(--line2); border-left:7px solid var(--bc); display:flex; flex-direction:column; gap:5px; min-height:86px; }
+  .style b { font-size:16px; } .style small { color:var(--dim); font-size:11.5px; line-height:1.45; } .style small em { font-style:normal; font-weight:800; color:var(--fg); }
+  .style .mine { position:absolute; top:7px; right:9px; font-style:normal; font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:1px; }
+  .style.on { background:color-mix(in srgb, var(--bc) 20%, var(--s1)); border-color:var(--bc); }
+  dialog.lvl { width:min(640px,96vw); max-height:92vh; overflow:auto; background:var(--s1); color:var(--fg); border:1px solid var(--line2); border-radius:18px; padding:16px; }
+  dialog.lvl::backdrop { background:#000b; }
+  .lv-head { display:flex; justify-content:space-between; align-items:center; font-size:18px; }
+  .lv-dev, .lv-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; } .lv-dev select { flex:1 1 220px; }
+  .lv-meter { display:flex; align-items:center; gap:10px; margin:6px 0 10px; } .lv-meter b { min-width:90px; text-align:right; font-variant-numeric:tabular-nums; }
+  .lv-bar { flex:1; height:14px; border-radius:7px; background:var(--s3); overflow:hidden; } .lv-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--acc),var(--tone)); transition:width .08s; }
+  .lv-sec { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; } .lv-sec h4 { margin:0 0 4px; }
+  .lvp { display:grid; grid-template-columns:auto 1fr auto auto; gap:8px; align-items:center; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .lvp b.l { color:var(--bc); font-size:20px; } .lvp .r { font-variant-numeric:tabular-nums; font-size:13px; text-align:right; }
+  .lv-res { font-size:12.5px; font-variant-numeric:tabular-nums; } .lv-res table { width:100%; border-collapse:collapse; } .lv-res td { padding:3px 4px; border-bottom:1px dashed var(--line); }
   .kitbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:12px 14px; border-radius:14px; border:1px solid var(--acc); background:color-mix(in srgb, var(--acc) 9%, var(--s1)); font-size:13px; }
   .kitbar[hidden] { display:none; } .kitbar span { flex:1 1 260px; } .kitbar b { color:var(--acc); }
   .bankhint { color:var(--dim); font-size:12px; margin:8px 2px 10px; } .bankhint b { color:var(--fg); }
@@ -193,7 +215,10 @@
     .hdr { padding:8px 12px; gap:8px; } .hdr #stageBtn, .hdr #libbtn, .hdr .devdirty { display:none; }
     .hdr #save { padding:7px 10px; font-size:13px; }
     body[data-v="play"] #editsec { display:none; }
-    body[data-v="edit"] #modes, body[data-v="edit"] #quick, body[data-v="edit"] #bankhint, body[data-v="edit"] #kitbar { display:none; }
+    body[data-v="edit"] .stylelib, body[data-v="edit"] #quick, body[data-v="edit"] #bankhint, body[data-v="edit"] #kitbar, body[data-v="edit"] .sc-act { display:none; }
+    .sc-act { width:100%; } .sc-act button { flex:1 1 auto; }
+    .q-irs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; } .q-irs .lbl { display:none; }
+    .qir { padding:8px 9px; font-size:12px; text-align:left; }
     .bank { padding:10px; gap:8px; flex-direction:column; align-items:flex-start; } .bank b { font-size:22px; } .bank span { font-size:13px; white-space:normal; }
     .modes { grid-template-columns:repeat(2,minmax(0,1fr)); } .mode { min-height:92px; padding:12px; } .mode b { font-size:15px; }
   }
@@ -286,16 +311,29 @@
 
   <main>
     <section class="banksec" id="banksec">
-      <div class="banks" id="banks"></div>
-      <div class="bankhint" id="bankhint"></div>
       <div class="kitbar" id="kitbar" hidden></div>
-      <div class="modes" id="modes"></div>
+      <div class="stylecard" id="stylecard">
+        <div class="sc-head">
+          <div class="sc-title"><small>No pedal agora</small><b id="scName">—</b><span id="scNote"></span></div>
+          <div class="sc-act">
+            <button id="scUndo" title="Volta o pedal para o estilo que estava antes">↶ Estilo anterior</button>
+            <button id="scSave" title="Guarda as 3 partes que estão no pedal como um estilo seu">Salvar estilo</button>
+            <button id="scLevel" class="pri" title="Mede o som que sai do pedal e acerta os volumes">🎚 Nivelar volume</button>
+          </div>
+        </div>
+        <div class="banks" id="banks"></div>
+        <div class="bankhint" id="bankhint"></div>
+      </div>
       <div class="quick" id="quick">
         <div class="q-irs" id="qirs"></div>
         <div class="q-row">
           <div class="q-tg" id="qtg"></div>
           <div class="q-vol"><button class="icon" id="qvm" title="Volume −4">−</button><input type="range" id="qvol" min="0" max="127" aria-label="Volume"><button class="icon" id="qvp" title="Volume +4">+</button><b id="qvolv"></b></div>
         </div>
+      </div>
+      <div class="stylelib">
+        <div class="sl-head"><b>Estilos e momentos</b><span class="tiny muted">um toque coloca A, B e C no pedal de uma vez</span></div>
+        <div id="styles"></div>
       </div>
     </section>
     <div id="editsec">
@@ -376,6 +414,30 @@
     <div class="row"><button class="pri" id="connect">Conectar ao pedal</button><button id="demo">Explorar sem o pedal</button></div>
   </div>
 </div>
+<dialog class="lvl" id="lvl">
+  <div class="lv-head"><b>Nivelar volume</b><button id="lvClose" title="Fechar">✕</button></div>
+  <p class="tiny muted">O app ouve a saída USB do pedal (no PC aparece como “Linha (USB-Audio)”) enquanto você toca, e mede o volume percebido (LUFS, o padrão de rádio e streaming). Ouça normalmente pelo fone ou pela caixa.</p>
+  <div class="lv-dev"><select id="lvDev"><option value="">Entrada de áudio…</option></select><button id="lvStart" class="pri">Ligar medidor</button></div>
+  <div class="lv-meter"><div class="lv-bar"><i id="lvBar"></i></div><b id="lvNow">— LUFS</b></div>
+  <section class="lv-sec">
+    <h4>0 · Escala do knob de volume (uma vez só)</h4>
+    <p class="tiny muted">Pise a letra selecionada no app e toque acordes contínuos por uns 14 segundos; o app muda o volume (120 → 100 → 80 → 60) e aprende quantos dB cada passo vale no seu pedal. Sem isso, o ajuste usa uma estimativa.</p>
+    <div class="lv-row"><button id="lvScale">Medir escala</button><span class="tiny muted" id="lvScaleRes"></span></div>
+  </section>
+  <section class="lv-sec">
+    <h4>1 · Partes do estilo (A, B, C)</h4>
+    <p class="tiny muted">Para cada letra: pise nela no pedal, aperte <b>Medir</b> e toque <b>como você toca naquela parte</b> (dedilhado na A, levada na B, solo na C) por 8 segundos.</p>
+    <div id="lvParts"></div>
+    <div class="lv-row"><label class="tiny">Destaque (C) acima de A e B: <select id="lvBoost"><option value="0">0 dB</option><option value="1">+1 dB</option><option value="2" selected>+2 dB</option><option value="3">+3 dB</option><option value="4">+4 dB</option></select></label>
+      <button id="lvApply" class="pri" disabled>Aplicar volumes e gravar no pedal</button></div>
+  </section>
+  <section class="lv-sec">
+    <h4>2 · As 8 IRs</h4>
+    <p class="tiny muted">Pise no pedal a <b>mesma letra que está selecionada no app</b> e toque acordes contínuos, sempre igual, por uns 30 segundos. O app troca a IR sozinho (1 → 8) e mede cada uma.</p>
+    <div class="lv-row"><button id="lvIrs">Medir as 8 IRs</button><button id="lvIrApply" class="pri" disabled>Regravar IRs com volume igual</button></div>
+    <div id="lvIrRes" class="lv-res"></div>
+  </section>
+</dialog>
 <nav class="bnav" id="bnav">
   <button data-v="play" class="on"><i>🎸</i><span>Tocar</span></button>
   <button data-v="edit"><i>🎛️</i><span>Ajustar</span></button>
@@ -400,30 +462,61 @@ const vec = (o) => C.map(c => o[c.key]);
 const MOD_OFF = 7, SPACE_OFF = 15;
 const NEUTRAL = { treb:64, mid:64, bass:64, time:30, mod:MOD_OFF, volume:100, antifb:3, space:SPACE_OFF, comp:2, ircab:1, sw1:1, sw2:1, sw3:1 };
 const FACTORY_IR = ['', 'Mart 45 Piezo 3C', 'Acoustic2-Impulse', 'Wurlitzer 1', 'Mart 45 Soundhole 5c', 'Soldano 2inch', 'On Axis grille', 'Taylor 314ce Soundelux', 'Pro Jr floor'];
-const APP_VERSION = 'v3 · bancos';
-/* Bancos = os 3 slots físicos do pedal (A, B, C). Cada banco tem uma lógica de uso, os seus modos
-   e as suas IRs. As IRs seguem o kit da aba IRs: A usa os slots de IR 1-3, B usa 4-6, C usa 7-8. */
-const BANKS = {
-  A:{ name:'Louvor', col:'#d9b56f', irs:[1, 2, 3], hint:'ritmo, dedilhado, oração e solo no louvor' },
-  B:{ name:'Intros e solos', col:'#e0846c', irs:[4, 5, 6], hint:'introduções e solos com presença' },
-  C:{ name:'Bossa / pagode', col:'#8aa4e6', irs:[7, 8], hint:'nylon, voz e violão, levadas' },
+const APP_VERSION = 'v4 · estilos';
+/* Os 3 botões do pedal são as 3 PARTES de uma música, sempre com o mesmo papel (o pé decora):
+     A = base suave (dedilhado, estrofe) · B = ritmo (levada, refrão) · C = destaque (solo, preenchimento)
+   Um ESTILO (louvor, bossa, pregação...) define as 3 partes e é gravado no pedal de uma vez.
+   É o mesmo esquema de "um preset por música + snapshots por trecho" usado em pedaleiras como a Helix. */
+const PART = {
+  A:{ col:'#d9b56f', fn:'Base suave', hint:'dedilhado, estrofe' },
+  B:{ col:'#e0846c', fn:'Ritmo', hint:'levada, refrão' },
+  C:{ col:'#8aa4e6', fn:'Destaque', hint:'solo, preenchimento' },
 };
-const mkM = (bank, id, name, note, over) => ({ id:'tpl-' + id, tpl:1, fixedIr:true, bank, name, tag:BANKS[bank].name, note, v:vec({ ...NEUTRAL, ...over }) });
+const mkP = (name, over) => ({ name, v:vec({ ...NEUTRAL, ...over }) });
+const mkS = (id, cat, name, note, a, b, c) => ({ id:'st-' + id, tpl:1, cat, name, note, parts:[a, b, c] });
+/* Regras usadas (referências no chat): dedilhado soa mais baixo que levada, então A ganha um pouco de volume e
+   médio; C (solo) fica ~2-3 dB acima e usa delay em vez de muito reverb; fundo para pregação é baixo e ambiente
+   para a voz continuar clara; modulação com moderação. Volumes aqui são o ponto de partida: o "Nivelar volume"
+   mede o som real e acerta. EQ 64 = meio. IRs: 1 Lucero · 2 OM-28 · 3 Lowden Old Lady · 4 Lowden K&K ·
+   5 McIlroy A30 · 6 McIlroy A25c · 7 Eastman · 8 Classical K&K (o kit da aba IRs). */
+const STYLES = [
+  mkS('louvor', 'Louvor', 'Louvor padrão', 'Dedilhado na estrofe, levada no refrão, solo no instrumental.',
+    mkP('Dedilhado', { ircab:3, comp:3, antifb:4, bass:60, mid:66, treb:62, space:9, volume:104 }),
+    mkP('Ritmo', { ircab:1, comp:4, antifb:5, bass:54, mid:62, treb:60, space:11, volume:98 }),
+    mkP('Solo', { ircab:2, comp:4, antifb:5, bass:52, mid:74, treb:64, space:22, time:50, volume:110 })),
+  mkS('celebracao', 'Louvor', 'Louvor animado', 'Celebração: tudo mais brilhante e firme; solo com eco curto.',
+    mkP('Ritmo brilhante', { ircab:4, comp:4, antifb:5, bass:54, mid:64, treb:66, space:12, volume:102 }),
+    mkP('Ritmo cheio', { ircab:2, comp:5, antifb:6, bass:52, mid:64, treb:62, space:13, volume:98 }),
+    mkP('Solo com eco', { ircab:4, comp:4, antifb:5, bass:52, mid:76, treb:64, space:20, time:22, volume:112 })),
+  mkS('adoracao', 'Louvor', 'Adoração intimista', 'Músicas lentas: ambiente na base, ritmo suave, melodia com delay longo.',
+    mkP('Dedilhado ambiente', { ircab:3, comp:2, antifb:4, bass:62, mid:58, treb:58, space:4, volume:104 }),
+    mkP('Ritmo suave', { ircab:1, comp:3, antifb:4, bass:58, mid:60, treb:58, space:8, volume:98 }),
+    mkP('Melodia com delay', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:60, space:25, time:70, volume:110 })),
+  mkS('pregacao', 'Momentos', 'Fundo para pregação', 'Por baixo da fala: volume baixo, delay longo como "pad", voz sempre clara.',
+    mkP('Fundo (pad)', { ircab:3, comp:2, antifb:5, bass:56, mid:52, treb:50, space:28, time:100, volume:90 }),
+    mkP('Fundo com reverb', { ircab:3, comp:2, antifb:5, bass:58, mid:54, treb:52, space:1, volume:90 }),
+    mkP('Crescendo / apelo', { ircab:1, comp:3, antifb:5, bass:58, mid:60, treb:56, space:5, volume:100 })),
+  mkS('intro-melancolica', 'Momentos', 'Introdução melancólica', 'Arpejo escuro com reverb longo e um trêmolo leve; melodia com delay.',
+    mkP('Arpejo escuro', { ircab:8, comp:2, antifb:4, bass:64, mid:56, treb:48, space:3, mod:10, volume:104 }),
+    mkP('Dedilhado aberto', { ircab:3, comp:3, antifb:4, bass:60, mid:60, treb:58, space:6, volume:100 }),
+    mkP('Melodia', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:58, space:23, time:60, volume:110 })),
+  mkS('intro-animada', 'Momentos', 'Introdução animada', 'Riff brilhante com eco curto, levada cheia e solo com presença.',
+    mkP('Riff brilhante', { ircab:4, comp:5, antifb:5, bass:52, mid:70, treb:66, space:19, time:18, volume:106 }),
+    mkP('Ritmo cheio', { ircab:2, comp:5, antifb:6, bass:52, mid:64, treb:62, space:13, volume:98 }),
+    mkP('Solo com presença', { ircab:4, comp:5, antifb:5, bass:50, mid:80, treb:62, space:12, volume:112 })),
+  mkS('bossa', 'Bossa e MPB', 'Bossa nova', 'Voz e violão macio, batida com grave, melodia com delay discreto.',
+    mkP('Voz e violão', { ircab:8, comp:2, antifb:3, bass:64, mid:56, treb:44, space:12, volume:102 }),
+    mkP('Batida bossa', { ircab:8, comp:3, antifb:3, bass:70, mid:60, treb:46, space:10, volume:98 }),
+    mkP('Melodia', { ircab:7, comp:4, antifb:3, bass:62, mid:70, treb:54, space:21, time:40, volume:108 })),
+  mkS('pagode', 'Bossa e MPB', 'Pagode / samba', 'Levada com ataque e médio; fraseado com eco curto.',
+    mkP('Levada leve', { ircab:7, comp:4, antifb:4, bass:60, mid:64, treb:56, space:13, volume:100 }),
+    mkP('Levada forte', { ircab:7, comp:5, antifb:4, bass:58, mid:68, treb:58, space:14, volume:98 }),
+    mkP('Fraseado / solo', { ircab:4, comp:4, antifb:4, bass:54, mid:74, treb:60, space:20, time:20, volume:110 })),
+];
 const mkU = (id, name, note, over) => ({ id:'tpl-' + id, tpl:1, name, tag:'Utilidades', note, v:vec({ ...NEUTRAL, ...over }) });
-/* Os valores de EQ (64 = meio) são um ponto de partida: ajuste de ouvido. Tudo aqui é sugestão, não receita. */
+/* As partes de cada estilo também ficam na biblioteca como "modelos" avulsos (para usar uma parte só) */
 const TEMPLATES = [
-  mkM('A', 'a-ritmo', 'Ritmo', 'Segurar a levada com a banda: reverb curto, grave contido, compressão firme.', { ircab:1, comp:4, antifb:5, bass:54, mid:62, treb:60, space:11, volume:100 }),
-  mkM('A', 'a-dedilhado', 'Dedilhado / fingerstyle', 'Dedilhados durante o louvor: definido e neutro, reverb leve.', { ircab:3, comp:3, antifb:4, bass:60, mid:60, treb:62, space:8, volume:100 }),
-  mkM('A', 'a-oracao', 'Dedilhado ambiente / oração', 'Momentos calmos: reverb forte e um trêmolo leve.', { ircab:3, comp:2, antifb:4, bass:62, mid:56, treb:58, space:3, mod:10, volume:98 }),
-  mkM('A', 'a-solo', 'Solo no louvor', 'Mais médio e volume, com um delay discreto.', { ircab:2, comp:4, antifb:5, bass:52, mid:74, treb:64, space:22, time:50, volume:110 }),
-  mkM('B', 'b-intro', 'Introdução ambiente', 'Reverb forte e trêmolo para abrir a música.', { ircab:6, comp:2, antifb:4, bass:60, mid:62, treb:64, space:2, mod:11, volume:104 }),
-  mkM('B', 'b-solo', 'Solo', 'Corpo e um delay médio.', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:62, space:24, time:60, volume:110 }),
-  mkM('B', 'b-presenca', 'Solo com presença', 'Médios e brilho para frente, quase seco.', { ircab:4, comp:5, antifb:5, bass:50, mid:80, treb:62, space:12, volume:114 }),
-  mkM('B', 'b-eco', 'Solo com eco curto', 'Slapback: um eco curto e discreto.', { ircab:4, comp:3, antifb:4, mid:68, treb:62, space:19, time:18, volume:108 }),
-  mkM('C', 'c-bossa', 'Bossa · nylon quente', 'Grave generoso, agudos suaves e reverb leve.', { ircab:8, comp:3, antifb:3, bass:70, mid:60, treb:46, space:10, volume:100 }),
-  mkM('C', 'c-voz', 'Bossa · voz e violão', 'Mais seco e macio para não cobrir a voz.', { ircab:8, comp:2, antifb:3, bass:64, mid:54, treb:44, space:12, volume:96 }),
-  mkM('C', 'c-pagode', 'Pagode · levada', 'Ataque firme e médios para a levada aparecer; quase seco.', { ircab:7, comp:5, antifb:4, bass:60, mid:68, treb:58, space:13, volume:104 }),
-  mkM('C', 'c-melodia', 'Bossa · melodia / solo', 'Médios na frente e um delay discreto.', { ircab:7, comp:4, antifb:3, bass:62, mid:70, treb:54, space:21, time:40, volume:108 }),
+  ...STYLES.flatMap(s => s.parts.map((p, i) => ({ id:'tpl-' + s.id.slice(3) + '-' + SLOT[i].toLowerCase(), tpl:1, fixedIr:true, name:p.name, tag:s.name, note:PART[SLOT[i]].fn + ' do estilo “' + s.name + '”', v:p.v }))),
   mkU('tremolo', 'Trêmolo suave', 'Mod acima de 8 liga o trêmolo; aqui no meio da faixa.', { mod:11, space:11, volume:100 }),
   mkU('palco', 'Palco · anti-microfonia', 'Anti-feedback no máximo, grave contido.', { antifb:8, comp:4, bass:44, mid:60, treb:54, space:13, volume:100 }),
   mkU('sem-ir', 'Sem IR (som cru)', 'IR desligada, para comparar com e sem o timbre da IR.', { sw1:0, ircab:0, comp:2, antifb:3 }),
@@ -464,10 +557,14 @@ const irText = (p) => {
   if (p.tpl && !p.fixedIr) return 'IR atual';
   return 'IR ' + n + ' · ' + (p.tpl ? irShort(n) : (p.ir || irShort(n)));
 };
-/* banco: A/B/C → índice e nome (o nome pode ser trocado com duplo clique) */
-const bankIdx = (L) => SLOT.indexOf(L);
-const bankName = (i) => slotNames[i] || BANKS[SLOT[i]].name;
-const bankModes = (L) => presets.filter(p => p.bank === L).concat(TEMPLATES.filter(t => t.bank === L));
+/* estilos: os de fábrica (STYLES) + os seus (salvos no navegador) */
+let styles = store.get('styles', []);
+let curStyleId = store.get('curStyle', null);
+let pedalBackups = store.get('pedalBackups', []);   // últimos estados do pedal, para "Estilo anterior"
+const allStyles = () => styles.concat(STYLES);
+const findS = (id) => allStyles().find(s => s.id === id);
+const partName = (i) => { const st = findS(curStyleId); return st ? st.parts[i].name : PART[SLOT[i]].fn; };
+const bankName = (i) => partName(i);
 const fxSummary = (v) => !v[K.sw2.id] ? 'efeitos desligados' : ([modName(v[K.mod.id]), spaceName(v[K.space.id])].filter(Boolean).join(' + ') || 'sem efeitos');
 let slotNames = store.get('slotNames', ['', '', '']);
 const persist = () => { store.set('presets2', presets); store.set('setlists', setlists); };
@@ -528,8 +625,8 @@ function onMsg(ev) {
 }
 function startDemo() {
   demo = true; selfTestOk = false; dev = new Array(Cube.DATA_LEN).fill(0);
-  for (let s = 0; s < 3; s++) { const m = TEMPLATES.find(t => t.bank === SLOT[s]); C.forEach((c, k) => dev[16 * s + c.id] = m.v[k]); }
-  devSaved = dev.slice();
+  STYLES[0].parts.forEach((p, s) => C.forEach((c, k) => dev[16 * s + c.id] = p.v[k]));
+  devSaved = dev.slice(); curStyleId = STYLES[0].id;
   setStatus('demonstração', 'demo'); $('#landing').hidden = true; loadSlot(0);
 }
 
@@ -625,7 +722,7 @@ function loadSlot(t, restore) {
   target = t;
   const src = restore && devSaved ? devSaved : dev;
   const v = C.map(c => src[16 * t + c.id]);
-  cur = { id:null, slot:t, name:'Pedal · ' + SLOT[t] + ' · ' + bankName(t), tag:'', note:'', fav:false, bank:SLOT[t], v };
+  cur = { id:null, slot:t, name:SLOT[t] + ' · ' + partName(t), tag:'', note:'', fav:false, v };
   base = v.slice(); baseMeta = { name:cur.name, tag:'', note:'' };
   if (restore) applyAll();
   renderSlots(); renderEditor(); renderList(); renderStage();
@@ -642,16 +739,15 @@ function savePreset() {
 function saveAsNew(suffix, bank) {
   let name = (cur.name || '').trim() || 'Novo preset';
   if (cur.tpl || suffix) name += suffix || ' (meu)';
-  const b = bank || cur.bank;
-  const p = { id:uid(), name, tag:b ? BANKS[b].name : (cur.tpl ? '' : cur.tag.trim()), note:cur.note.trim(), fav:false, v:cur.v.slice(), ir:irNames[cur.v[K.ircab.id]] || '', irCat:cur.irCat, bank:b };
+  const p = { id:uid(), name, tag:cur.tpl ? '' : cur.tag.trim(), note:cur.note.trim(), fav:false, v:cur.v.slice(), ir:irNames[cur.v[K.ircab.id]] || '', irCat:cur.irCat };
   presets.unshift(p); persist();
-  cur = { ...cur, id:p.id, tpl:false, slot:undefined, name:p.name, tag:p.tag, bank:b };
+  cur = { ...cur, id:p.id, tpl:false, slot:undefined, name:p.name, tag:p.tag };
   base = cur.v.slice(); baseMeta = { name:p.name, tag:p.tag, note:p.note };
   renderEditor(); renderList(); toast('Salvo na biblioteca'); return p;
 }
 function newPreset() {
   if (cur) pushHist();
-  cur = { id:null, name:'Novo modo', tag:'', note:'', fav:false, bank:SLOT[target], v:vec(NEUTRAL) };
+  cur = { id:null, name:'Novo preset', tag:'', note:'', fav:false, v:vec(NEUTRAL) };
   base = cur.v.slice(); baseMeta = { name:'', tag:'', note:'' };
   applyAll(); renderEditor(); renderList(); $('#pname').select();
 }
@@ -794,20 +890,73 @@ function buildEq() {
 }
 
 /* ======================= render ======================= */
-/* ---- bancos = slots físicos A/B/C ---- */
+/* ---- partes A/B/C (os 3 botões do pedal) e estilos ---- */
+const devPart = (s) => C.map(c => dev ? dev[16 * s + c.id] : 0);
+const styleOnPedal = (st) => !!dev && st.parts.every((p, s) => p.v.every((x, k) => Math.min(x, C[k].max) === dev[16 * s + C[k].id]));
+const partSummary = (v) => (v[K.ircab.id] ? 'IR ' + v[K.ircab.id] + ' ' + irShort(v[K.ircab.id]) : 'sem IR') + ' · ' + fxSummary(v) + ' · vol ' + v[K.volume.id];
+const STYLE_CAT_COL = { 'Meus estilos':'#d4b06a', 'Louvor':'#d9b56f', 'Momentos':'#a996d9', 'Bossa e MPB':'#8aa4e6' };
 function renderSlots() {
-  $('#banks').innerHTML = SLOT.map((n, i) => `<button class="bank ${i === target ? 'on' : ''}" data-i="${i}" style="--bc:${BANKS[n].col}" title="Banco ${n} · duplo clique para renomear"><b>${n}</b><span>${esc(bankName(i))}</span></button>`).join('');
-  const L = SLOT[target], b = BANKS[L];
-  $('#bankhint').innerHTML = `No pedal, pise em <b>${L}</b> para ouvir este banco · ${esc(b.hint)} · IRs ${b.irs.join(', ')}`;
+  const st = findS(curStyleId), exact = st && styleOnPedal(st);
+  $('#scName').textContent = st ? st.name + (exact ? '' : ' · alterado') : 'Sons que estão no pedal';
+  $('#scNote').textContent = st ? (st.note || '') : 'Escolha um estilo abaixo: ele coloca A, B e C no pedal de uma vez.';
+  $('#banks').innerHTML = SLOT.map((n, i) => `<button class="bank ${i === target ? 'on' : ''}" data-i="${i}" style="--bc:${PART[n].col}" title="${PART[n].fn}: ${PART[n].hint}"><b>${n}</b><span><strong>${esc(partName(i))}</strong><small>${esc(PART[n].fn)} · ${esc(partSummary(devPart(i)))}</small></span></button>`).join('');
+  $('#bankhint').innerHTML = `Editando a parte <b>${SLOT[target]}</b>. Pise na mesma letra no pedal para ouvir o que você ajusta.`;
+  $('#scUndo').disabled = !pedalBackups.length;
   renderModes(); renderKitBar();
 }
-/* Os modos apontam para as posições do kit; avisa enquanto as IRs do pedal não forem as do kit */
+/* Os estilos apontam para as posições do kit de IRs; avisa enquanto as IRs do pedal não forem as do kit */
 const kitOnPedal = () => IRKIT.every(k => slotAssign[k.slot] === k.name);
 function renderKitBar() {
   const bar = $('#kitbar'); if (!bar) return;
   bar.hidden = kitOnPedal(); if (bar.hidden) return;
   const have = IRKIT.filter(k => irlib.some(r => r.name === k.name)).length;
-  bar.innerHTML = `<span><b>As IRs do pedal ainda não seguem os bancos.</b> Os modos esperam o kit (A = IRs 1-3, B = 4-6, C = 7-8), mas os slots ainda têm outras IRs${irNames[1] ? ' (o 1 está com “' + esc(irShort(1)) + '”)' : ''}. ${have < 8 ? `Faltam ${8 - have} das 8 IRs do kit na biblioteca: importe a pasta <b>Irs</b> primeiro.` : 'As 8 IRs já estão na biblioteca.'}</span><button class="pri" id="kitgo">${have < 8 ? 'Importar IRs' : 'Gravar o kit no pedal'}</button>`;
+  bar.innerHTML = `<span><b>As IRs do pedal ainda não são as do kit.</b> Os estilos usam as 8 IRs do kit (1 Lucero, 2 OM-28, 3 Lowden Old Lady, 4 Lowden K&K, 5 McIlroy A30, 6 McIlroy A25c, 7 Eastman, 8 Classical K&K)${irNames[1] ? '; o slot 1 está com “' + esc(irShort(1)) + '”' : ''}. ${have < 8 ? `Faltam ${8 - have} das 8 IRs do kit na biblioteca: importe a pasta <b>Irs</b> primeiro.` : 'As 8 IRs já estão na biblioteca.'}</span><button class="pri" id="kitgo">${have < 8 ? 'Importar IRs' : 'Gravar o kit no pedal'}</button>`;
+}
+
+/* gravar no pedal: manda as 3 partes ao vivo e salva (os botões A/B/C passam a ter estes sons) */
+function drainQueue(max = 6000) { return new Promise(res => { const t0 = Date.now(); const tick = () => ((!busy && !q.size) || Date.now() - t0 > max) ? res() : setTimeout(tick, 20); tick(); }); }
+async function writePedal(why) {
+  if (demo || !out) { devSaved = dev.slice(); updDevState(); return true; }
+  if (!selfTestOk) { toast('Não gravei: a leitura do pedal não passou no autoteste', true); return false; }
+  for (let s = 0; s < 3; s++) C.forEach(c => queue(16 * s + c.id, dev[16 * s + c.id]));
+  await drainQueue();
+  const msg = Cube.buildDump(dev, Cube.HDR_SAVE); out.send(msg); log('SAVE (' + why + ') enviado');
+  setTimeout(() => out && out.send(Cube.REQUEST_PRESETS), 400);
+  return true;
+}
+function pushBackup() {
+  if (!devSaved) return;
+  pedalBackups.push({ t:Date.now(), style:curStyleId, data:devSaved.slice() });
+  if (pedalBackups.length > 10) pedalBackups.shift();
+  if (!demo) store.set('pedalBackups', pedalBackups);
+}
+async function applyStyle(st) {
+  if (!st || !dev) return;
+  pushBackup();
+  st.parts.forEach((p, s) => C.forEach((c, k) => dev[16 * s + c.id] = Math.min(p.v[k], c.max)));
+  curStyleId = st.id; if (!demo) store.set('curStyle', curStyleId);
+  loadSlot(target);
+  const ok = await writePedal('estilo ' + st.name);
+  renderSlots();
+  if (ok) toast(`“${st.name}” no pedal · A ${st.parts[0].name} · B ${st.parts[1].name} · C ${st.parts[2].name}`);
+}
+async function undoStyle() {
+  const b = pedalBackups.pop(); if (!b || !dev) return;
+  if (!demo) store.set('pedalBackups', pedalBackups);
+  dev = b.data.slice(); curStyleId = b.style; if (!demo) store.set('curStyle', curStyleId);
+  loadSlot(target); await writePedal('estilo anterior'); renderSlots(); toast('O pedal voltou ao estilo anterior');
+}
+function saveStyle(nameArg) {
+  if (!dev) return null;
+  const st = findS(curStyleId);
+  const name = (nameArg || prompt('Nome do estilo (guarda as partes A, B e C que estão no pedal agora):', st ? (st.tpl ? st.name + ' (meu)' : st.name) : 'Meu estilo') || '').trim();
+  if (!name) return null;
+  const parts = [0, 1, 2].map(s => ({ name:st ? st.parts[s].name : PART[SLOT[s]].fn, v:devPart(s) }));
+  let mine = st && !st.tpl && st.name === name ? st : null;
+  if (mine) mine.parts = parts;
+  else { mine = { id:'my-' + uid(), cat:'Meus estilos', name:name.slice(0, 40), note:st ? st.note : '', parts }; styles.unshift(mine); }
+  store.set('styles', styles); curStyleId = mine.id; store.set('curStyle', curStyleId);
+  renderSlots(); toast('Estilo “' + mine.name + '” salvo'); return mine;
 }
 $('#kitbar').onclick = (e) => {
   if (!e.target.closest('#kitgo')) return;
@@ -817,30 +966,35 @@ $('#kitbar').onclick = (e) => {
   (have < 8 ? $('#irdirbtn') : $('#kitbtn')).scrollIntoView({ block:'center' });
   if (have === 8) applyKit();
 };
+/* biblioteca de estilos (Meus estilos primeiro, depois Louvor, Momentos, Bossa e MPB) */
 function renderModes() {
-  const L = SLOT[target], col = BANKS[L].col;
-  $('#modes').innerHTML = bankModes(L).map(p => `<button class="mode ${cur && cur.id === p.id ? 'on' : ''}" data-id="${esc(p.id)}" style="--bc:${col}">${p.tpl ? '' : '<i class="mine">meu</i>'}<b>${esc(p.name)}</b><small>${esc(irText(p))}<br>${esc(fxSummary(p.v))}</small></button>`).join('')
-    + `<button class="mode add" id="modeAdd" style="--bc:${col}">＋ Salvar o som atual como modo do banco ${L}</button>`;
+  const groups = [];
+  if (styles.length) groups.push(['Meus estilos', styles]);
+  for (const cat of [...new Set(STYLES.map(s => s.cat))]) groups.push([cat, STYLES.filter(s => s.cat === cat)]);
+  $('#styles').innerHTML = groups.map(([cat, list]) => `<div class="grp">${esc(cat)}</div><div class="stylegrid">` + list.map(st =>
+    `<button class="style ${st.id === curStyleId ? 'on' : ''}" data-id="${esc(st.id)}" style="--bc:${STYLE_CAT_COL[cat] || '#d4b06a'}" title="${esc(st.note || '')}">${st.tpl ? '' : '<i class="mine">meu</i>'}<b>${esc(st.name)}</b><small>${st.parts.map((p, i) => `<em>${SLOT[i]}</em> ${esc(p.name)}`).join(' · ')}</small></button>`).join('') + '</div>').join('');
 }
 $('#banks').onclick = (e) => {
   const b = e.target.closest('.bank'); if (!b || !dev) return;
   const t = +b.dataset.i; if (t === target) return;
   loadSlot(t);
-  toast(`Banco ${SLOT[t]} · ${bankName(t)}: pise em ${SLOT[t]} no pedal para ouvir`);
+  toast(`Parte ${SLOT[t]} · ${partName(t)}: pise ${SLOT[t]} no pedal para ouvir`);
 };
-$('#banks').ondblclick = (e) => { const b = e.target.closest('.bank'); if (!b) return; const i = +b.dataset.i; const n = prompt('Nome do banco ' + SLOT[i], bankName(i)); if (n !== null) { slotNames[i] = n.trim().slice(0, 30); store.set('slotNames', slotNames); renderSlots(); } };
-$('#modes').onclick = (e) => {
-  const m = e.target.closest('.mode'); if (!m || !cur) return;
-  if (m.id === 'modeAdd') { const p = saveAsNew('', SLOT[target]); renderModes(); toast(`“${p.name}” salvo como modo do banco ${SLOT[target]}`); return; }
-  const p = findP(m.dataset.id); if (p) loadPreset(p, null);
+$('#banks').ondblclick = (e) => {
+  const b = e.target.closest('.bank'); if (!b) return; const i = +b.dataset.i, st = findS(curStyleId);
+  if (!st || st.tpl) return toast('Salve o estilo como seu para renomear as partes');
+  const n = prompt('Nome da parte ' + SLOT[i], st.parts[i].name); if (n) { st.parts[i].name = n.trim().slice(0, 30); store.set('styles', styles); renderSlots(); }
 };
+$('#styles').onclick = (e) => { const b = e.target.closest('.style'); if (b) applyStyle(findS(b.dataset.id)); };
+$('#scUndo').onclick = undoStyle;
+$('#scSave').onclick = () => saveStyle();
+$('#scLevel').onclick = () => openLevel();
 
 /* ---- controles rápidos (IRs do banco, blocos, volume) ---- */
 function renderQuick() {
   if (!cur) return;
-  const L = SLOT[target], b = BANKS[L], ir = cur.v[K.ircab.id];
-  $('#qirs').innerHTML = '<span class="lbl">IR</span>' + b.irs.map(n => `<button class="qir ${ir === n ? 'on' : ''}" data-ir="${n}" style="--bc:${b.col}">${n} · ${esc(irShort(n))}</button>`).join('')
-    + `<button class="qir ${b.irs.includes(ir) ? '' : 'on'}" data-ir="more" style="--bc:${b.col}">${b.irs.includes(ir) ? 'outras…' : (ir === 0 ? 'sem IR' : ir + ' · ' + esc(irShort(ir)))}</button>`;
+  const col = PART[SLOT[target]].col, ir = cur.v[K.ircab.id];
+  $('#qirs').innerHTML = '<span class="lbl">IR</span>' + [1, 2, 3, 4, 5, 6, 7, 8].map(n => `<button class="qir ${ir === n ? 'on' : ''}" data-ir="${n}" style="--bc:${col}" title="${esc(irLabel(n))}">${n} · ${esc(irShort(n))}</button>`).join('');
   $('#qtg').innerHTML = [['TOM', 'sw3', 'var(--tone)'], ['EFEITOS', 'sw2', 'var(--fx)'], ['IR', 'sw1', 'var(--ir)']]
     .map(([n, key, col]) => `<button class="${cur.v[K[key].id] ? 'on' : ''}" data-k="${key}" style="--cc:${col}">${n}</button>`).join('');
   renderKitBar();
@@ -849,9 +1003,15 @@ function renderQuick() {
 }
 $('#qirs').onclick = (e) => {
   const b = e.target.closest('.qir'); if (!b || !cur) return;
-  if (b.dataset.ir === 'more') { setView('edit'); $('#c-ir').scrollIntoView({ behavior:'smooth', block:'center' }); return; }
-  pushHist(); setVal(K.ircab.id, +b.dataset.ir); renderIrs();
+  setIr(+b.dataset.ir);
 };
+/* troca de IR com compensação de volume (quando as IRs já foram medidas e ainda não foram regravadas niveladas) */
+function setIr(n) {
+  const old = cur.v[K.ircab.id]; pushHist(); setVal(K.ircab.id, n);
+  const d = irDelta(old, n);
+  if (d) { setVal(K.volume.id, dbToVol(volToDb(cur.v[K.volume.id]) + d)); knobs[K.volume.id]?.draw(); }
+  renderIrs();
+}
 $('#qtg').onclick = (e) => { const b = e.target.closest('button'); if (!b || !cur) return; const k = K[b.dataset.k].id; pushHist(); setVal(k, cur.v[k] ? 0 : 1); };
 $('#qvol').onpointerdown = () => pushHist();
 $('#qvol').oninput = (e) => { setVal(K.volume.id, +e.target.value); knobs[K.volume.id]?.draw(); };
@@ -904,12 +1064,12 @@ for (const [sw, key] of [['#sw-ir', 'sw1'], ['#sw-fx', 'sw2'], ['#sw-tone', 'sw3
 
 function renderIrs() {
   const k = K.ircab.id;
-  const bk = BANKS[SLOT[target]];
-  $('#irs').innerHTML = Array.from({ length:9 }, (_, i) => `<button data-i="${i}" class="${i === cur.v[k] ? 'on' : ''} ${i === 0 ? '' : bk.irs.includes(i) ? 'inbank' : 'outbank'}" style="--bc:${bk.col}" title="${esc(irLabel(i))}"><b>${i === 0 ? 'OFF' : i}</b><small>${i === 0 ? 'sem IR' : esc(irLabel(i))}</small></button>`).join('');
-  $('#irlegend').innerHTML = `<i style="--bc:${bk.col}"></i>IRs do banco ${SLOT[target]} (${esc(bankName(target))}): ${bk.irs.join(', ')} · as outras ficam apagadas, mas continuam disponíveis`;
+  const col = PART[SLOT[target]].col;
+  $('#irs').innerHTML = Array.from({ length:9 }, (_, i) => `<button data-i="${i}" class="${i === cur.v[k] ? 'on' : ''}" style="--bc:${col}" title="${esc(irLabel(i))}"><b>${i === 0 ? 'OFF' : i}</b><small>${i === 0 ? 'sem IR' : esc(irLabel(i))}</small></button>`).join('');
+  $('#irlegend').innerHTML = irOff ? `<i style="--bc:${col}"></i>IRs medidas: a troca de IR já corrige o volume (${Object.entries(irOff).map(([n, d]) => n + ': ' + (d >= 0 ? '+' : '') + d.toFixed(1)).join(' · ')} dB)` : '';
   $('#irlab').textContent = cur.v[k] === 0 ? 'IR OFF' : 'IR ' + cur.v[k]; $('#irname').value = irNames[cur.v[k]] || ''; $('#irname').disabled = cur.v[k] === 0;
 }
-$('#irs').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; pushHist(); setVal(K.ircab.id, +b.dataset.i); renderIrs(); };
+$('#irs').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; setIr(+b.dataset.i); };
 $('#irslot').innerHTML = Array.from({ length:8 }, (_, i) => `<option value="${i + 1}">Slot ${i + 1}${Cube.IR_SLOT_VERIFIED.includes(i + 1) ? '' : ' (não conferido)'}</option>`).join('');
 
 /* ---- processamento e envio de uma IR (usado pelo arquivo avulso e pela biblioteca) ---- */
@@ -939,6 +1099,7 @@ async function sendIR(slot, s, label, rate, opts = {}) {
     const r = await sendSeq(Cube.irWrite(slot, s, 0.5), (i, n) => { prog.textContent = `enviando ${i + 1}/${n}…`; });
     irNames[slot] = label.slice(0, 40); store.set('irNames', irNames);
     slotAssign[slot] = (opts.libName || label).slice(0, 80); store.set('slotAssign', slotAssign);
+    slotGain[slot] = opts.gain || 0; store.set('slotGain', slotGain);   // ganho aplicado sobre o arquivo original
     prog.textContent = r.lost ? `enviado, mas ${r.lost} mensagem(ns) sem confirmação` : 'enviado';
     if (cur && opts.select !== false) { pushHist(); setVal(K.ircab.id, slot); }   // já deixa a IR selecionada para ouvir
     renderIrs(); onChange(); renderList();
@@ -958,6 +1119,7 @@ $('#irfile').onchange = async (e) => {
 /* ---- biblioteca de IRs (IndexedDB) ---- */
 let irlib = [], irTarget = +store.get('irTarget', 1), irFilter = 'all', irQuery = '', irDbOk = true;
 let slotAssign = store.get('slotAssign', {});
+let slotGain = store.get('slotGain', {});   // dB aplicados em cada slot de IR sobre o arquivo original (kit e nivelamento)
 const idb = {
   db: null,
   open() { return this.db || (this.db = new Promise((res, rej) => { const r = indexedDB.open('cube-editor', 1); r.onupgradeneeded = () => r.result.createObjectStore('irs', { keyPath:'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); })); },
@@ -1095,7 +1257,7 @@ async function applyKit() {
     for (const i of plan.items) {
       btn.textContent = `Gravando ${i.slot}/8…`;
       const g = Math.pow(10, i.gain / 20), s = Float32Array.from(i.rec.s, x => x * g);
-      await sendIR(i.slot, s, i.label, i.rec.rate, { libName:i.rec.name, select:false });
+      await sendIR(i.slot, s, i.label, i.rec.rate, { libName:i.rec.name, select:false, gain:i.gain });
     }
     toast('Kit gravado nos 8 slots. Troque o botão IR Cab para ouvir cada um.'); renderIrs(); onChange(); renderList();
   } catch (err) { toast('O kit parou no meio: ' + err.message, true); log('Kit: ' + err.message); }
@@ -1175,11 +1337,204 @@ $('#setAdd').onclick = () => {
   s.items.push(id); persist(); renderList(); toast('Adicionado à setlist “' + s.name + '”');
 };
 
+/* ======================= nivelamento de volume (mede a saída USB do pedal) ======================= */
+/* Volume percebido no estilo do ITU-R BS.1770 (o LUFS de rádio/streaming): filtro K (shelf +4 dB a ~1,7 kHz e
+   passa-altas a ~38 Hz), blocos de ~85 ms, porta absoluta em -70 LUFS e relativa em -10 dB (ignora o silêncio). */
+const blockLufs = (ms) => -0.691 + 10 * Math.log10(ms + 1e-12);
+function integrate(msList) {
+  const abs = msList.filter(ms => blockLufs(ms) > -70); if (!abs.length) return null;
+  const rel = blockLufs(abs.reduce((a, b) => a + b, 0) / abs.length) - 10;
+  const g = abs.filter(ms => blockLufs(ms) > rel); return blockLufs(g.reduce((a, b) => a + b, 0) / g.length);
+}
+/* escala do knob de volume: medida no seu pedal (pontos v → dB) ou, sem medida, estimativa de amplitude linear */
+let volScale = store.get('volScale', null);
+const volToDbDefault = (v) => 20 * Math.log10(Math.max(v, 1) / 127);
+function volToDb(v) {
+  const P = volScale; if (!P || P.length < 2) return volToDbDefault(v);
+  const seg = (a, b) => a.db + (v - a.v) * (b.db - a.db) / (b.v - a.v);
+  if (v <= P[0].v) return seg(P[0], P[1]);
+  for (let i = 1; i < P.length; i++) if (v <= P[i].v) return seg(P[i - 1], P[i]);
+  return seg(P[P.length - 2], P[P.length - 1]);
+}
+function dbToVol(db) { let best = 0, bd = 1e9; for (let v = 0; v <= 127; v++) { const d = Math.abs(volToDb(v) - db); if (d < bd) { bd = d; best = v; } } return best; }
+/* diferença medida entre as IRs (dB acima da mediana): usada para corrigir o volume ao trocar de IR no app */
+let irOff = store.get('irOff', null);
+const irDelta = (a, b) => (irOff && irOff[a] != null && irOff[b] != null) ? irOff[a] - irOff[b] : 0;
+
+/* planos (funções puras, conferidas no autoteste) */
+function planLevel(meas, vols, boost) {
+  // meas: LUFS medidos de A, B, C (null = não medida). A e B no mesmo nível; C = +boost dB.
+  const ref = [meas[0], meas[1]].filter(x => x != null);
+  const base = ref.length ? ref.reduce((a, b) => a + b, 0) / ref.length : (meas[2] != null ? meas[2] - boost : null);
+  if (base == null) return [null, null, null];
+  return meas.map((m, i) => {
+    if (m == null) return null;
+    const delta = base + (i === 2 ? boost : 0) - m, want = volToDb(vols[i]) + delta, to = dbToVol(want);
+    return { slot:i, from:vols[i], to, delta, clamped:Math.abs(volToDb(to) - want) > 0.75 };
+  });
+}
+function planIrLevel(off, items) {
+  // off: {slot: dB acima da mediana}; items: [{slot, gain atual (dB sobre o arquivo), peak do arquivo}]
+  const want = items.map(it => ({ slot:it.slot, from:it.gain, g:it.gain - (off[it.slot] || 0), max:20 * Math.log10(0.98 / it.peak) }));
+  const shift = Math.min(0, ...want.map(w => w.max - w.g));   // se alguma não pode subir, todas descem juntas
+  return want.map(w => ({ slot:w.slot, from:w.from, to:w.g + shift }));
+}
+
+/* medidor (Web Audio: entrada USB do pedal) */
+const M = { ctx:null, stream:null, an:null, buf:null, tm:null, blocks:[] };
+async function meterDevices() {
+  try {
+    const list = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const sel = $('#lvDev'), prev = sel.value || store.get('lvDev', '');
+    sel.innerHTML = list.length ? list.map(d => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Entrada de áudio ' + (d.deviceId || '').slice(0, 6))}</option>`).join('') : '<option value="">nenhuma entrada de áudio</option>';
+    const pref = list.find(d => d.deviceId && d.deviceId === prev) || list.find(d => /usb/i.test(d.label)); if (pref) sel.value = pref.deviceId;
+  } catch {}
+}
+async function meterStart() {
+  meterStop();
+  const id = $('#lvDev').value;
+  M.stream = await navigator.mediaDevices.getUserMedia({ audio:{ deviceId:id ? { exact:id } : undefined, echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  M.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = M.ctx.createMediaStreamSource(M.stream);
+  const hs = M.ctx.createBiquadFilter(); hs.type = 'highshelf'; hs.frequency.value = 1681.97; hs.gain.value = 4;
+  const hp = M.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 38.13; hp.Q.value = 0.5;
+  M.an = M.ctx.createAnalyser(); M.an.fftSize = 4096; M.buf = new Float32Array(M.an.fftSize);
+  src.connect(hs); hs.connect(hp); hp.connect(M.an);
+  M.tm = setInterval(() => {
+    M.an.getFloatTimeDomainData(M.buf); let s = 0; for (const x of M.buf) s += x * x;
+    M.blocks.push({ t:performance.now(), ms:s / M.buf.length }); if (M.blocks.length > 3000) M.blocks.splice(0, 1000);
+    const recent = M.blocks.filter(b => b.t > performance.now() - 3000).map(b => b.ms);
+    const st = recent.length ? blockLufs(recent.reduce((a, b) => a + b, 0) / recent.length) : -99;
+    $('#lvNow').textContent = st > -90 ? st.toFixed(1) + ' LUFS' : '— LUFS';
+    $('#lvBar').style.width = Math.max(0, Math.min(100, (st + 60) / 60 * 100)) + '%';
+  }, M.an.fftSize / M.ctx.sampleRate * 1000);
+  store.set('lvDev', id); await meterDevices();
+  $('#lvStart').textContent = 'Medidor ligado ✓'; updLevelUi();
+}
+function meterStop() { clearInterval(M.tm); M.tm = null; try { M.stream && M.stream.getTracks().forEach(t => t.stop()); M.ctx && M.ctx.close(); } catch {} M.stream = M.ctx = null; M.blocks = []; }
+/* mede durante "secs" segundos, ignorando os primeiros "skip" (para o som assentar depois de uma troca) */
+function captureLufs(secs, skip = 0.5, onTick) {
+  return new Promise((res, rej) => {
+    if (!M.tm) return rej(new Error('ligue o medidor primeiro'));
+    const t0 = performance.now(), from = t0 + skip * 1000, to = t0 + secs * 1000;
+    const iv = setInterval(() => {
+      const now = performance.now(); onTick && onTick(Math.max(0, (to - now) / 1000));
+      if (now >= to) { clearInterval(iv); res(integrate(M.blocks.filter(b => b.t >= from && b.t <= to).map(b => b.ms))); }
+    }, 100);
+  });
+}
+
+/* janela "Nivelar volume" */
+let lvMeas = [null, null, null];
+function openLevel() { if (!dev) return toast('Conecte ao pedal (ou explore sem ele) primeiro', true); $('#lvl').showModal(); meterDevices(); updLevelUi(); renderIrResult(); }
+$('#lvClose').onclick = () => { $('#lvl').close(); meterStop(); $('#lvStart').textContent = 'Ligar medidor'; };
+$('#lvStart').onclick = async () => { try { await meterStart(); } catch (e) { toast('Não consegui abrir a entrada de áudio: ' + e.message, true); } };
+$('#lvDev').onchange = () => { if (M.tm) meterStart().catch(e => toast(e.message, true)); };
+function updLevelUi() {
+  if (!dev) return;
+  const vols = [0, 1, 2].map(s => devPart(s)[K.volume.id]);
+  const plan = planLevel(lvMeas, vols, +$('#lvBoost').value);
+  $('#lvParts').innerHTML = SLOT.map((n, i) => { const p = plan[i]; return `<div class="lvp" style="--bc:${PART[n].col}"><b class="l">${n}</b><span>${esc(partName(i))}<br><small class="muted">${esc(PART[n].fn)} · volume ${vols[i]}</small></span><span class="r">${lvMeas[i] != null ? lvMeas[i].toFixed(1) + ' LUFS' + (p ? `<br>${p.delta >= 0 ? '+' : ''}${p.delta.toFixed(1)} dB → vol ${p.to}${p.clamped ? ' (no limite)' : ''}` : '') : '—'}</span><button data-m="${i}">Medir</button></div>`; }).join('');
+  $('#lvApply').disabled = !plan.some(Boolean);
+  $('#lvScaleRes').textContent = volScale ? 'medida: ' + volScale.map(p => p.v + ' → ' + p.db.toFixed(1) + ' dB').join(' · ') : 'ainda não medida (usando estimativa)';
+  $('#lvIrApply').disabled = !irOff;
+}
+$('#lvBoost').onchange = updLevelUi;
+$('#lvParts').onclick = async (e) => {
+  const b = e.target.closest('[data-m]'); if (!b) return; const i = +b.dataset.m;
+  if (i !== target) loadSlot(i);
+  try {
+    b.disabled = true; toast(`Pise ${SLOT[i]} no pedal e toque a parte “${partName(i)}”`);
+    const L = await captureLufs(8, 0.8, (s) => b.textContent = s > 0 ? 'tocando… ' + Math.ceil(s) : '…');
+    if (L == null) throw new Error('não ouvi som: confira a entrada de áudio e toque um pouco mais forte');
+    lvMeas[i] = L;
+  } catch (err) { toast(err.message, true); }
+  b.disabled = false; b.textContent = 'Medir'; updLevelUi();
+};
+$('#lvApply').onclick = async () => {
+  const vols = [0, 1, 2].map(s => devPart(s)[K.volume.id]);
+  const plan = planLevel(lvMeas, vols, +$('#lvBoost').value).filter(Boolean);
+  if (!plan.length || !dev) return;
+  pushBackup();
+  for (const p of plan) dev[16 * p.slot + K.volume.id] = p.to;
+  loadSlot(target);
+  const ok = await writePedal('nivelamento');
+  const st = findS(curStyleId);   // guarda no estilo; se é de fábrica, vira um estilo seu "(nivelado)"
+  if (st) saveStyle(st.tpl ? st.name + ' (nivelado)' : st.name);
+  lvMeas = [null, null, null]; updLevelUi();
+  if (ok) toast('Volumes aplicados: ' + plan.map(p => SLOT[p.slot] + ' ' + p.from + '→' + p.to).join(' · ') + '. Meça de novo para conferir.');
+};
+$('#lvScale').onclick = async () => {
+  const b = $('#lvScale'), k = K.volume.id, keep = cur.v[k], pts = [];
+  try {
+    b.disabled = true; pushHist();
+    for (const v of [120, 100, 80, 60]) {
+      setVal(k, v); knobs[k]?.draw();
+      const L = await captureLufs(3.4, 0.8, (s) => b.textContent = `volume ${v}… ${Math.ceil(s)}`);
+      if (L == null) throw new Error('não ouvi som no volume ' + v);
+      pts.push({ v, L });
+    }
+    const ref = pts[0].L - volToDbDefault(120);   // só as diferenças importam; ancora o 120 na estimativa
+    volScale = pts.map(p => ({ v:p.v, db:p.L - ref })).sort((a, c) => a.v - c.v); store.set('volScale', volScale);
+    toast('Escala do volume medida');
+  } catch (err) { toast(err.message, true); }
+  setVal(k, keep); knobs[k]?.draw(); b.disabled = false; b.textContent = 'Medir escala'; updLevelUi();
+};
+$('#lvIrs').onclick = async () => {
+  const b = $('#lvIrs'), k = K.ircab.id, keep = cur.v[k], res = {};
+  try {
+    b.disabled = true; pushHist();
+    for (let n = 1; n <= 8; n++) {
+      setVal(k, n); renderIrs();
+      const L = await captureLufs(3.5, 0.9, (s) => b.textContent = `IR ${n}… ${Math.ceil(s)}`);
+      if (L == null) throw new Error('não ouvi som na IR ' + n);
+      res[n] = L;
+    }
+    const v = Object.values(res).sort((a, c) => a - c), med = (v[3] + v[4]) / 2;
+    irOff = Object.fromEntries(Object.entries(res).map(([n, L]) => [n, L - med])); store.set('irOff', irOff);
+  } catch (err) { toast(err.message, true); }
+  setVal(k, keep); b.disabled = false; b.textContent = 'Medir as 8 IRs'; renderIrs(); updLevelUi(); renderIrResult();
+};
+function renderIrResult() {
+  $('#lvIrRes').innerHTML = !irOff ? '' : '<table>' + Object.entries(irOff).map(([n, d]) => `<tr><td>IR ${n}</td><td>${esc(irShort(+n))}</td><td style="text-align:right">${d >= 0 ? '+' : ''}${d.toFixed(1)} dB</td></tr>`).join('') + '</table>';
+}
+/* ganho atual de cada slot sobre o arquivo original (o kit gravado antes desta versão não guardava) */
+function gainOf(n) {
+  if (slotGain[n] != null) return slotGain[n];
+  const k = IRKIT.find(x => x.slot === n && x.name === slotAssign[n]);
+  return k ? (kitPlan().items.find(i => i.slot === n)?.gain ?? 0) : 0;
+}
+function irLevelItems() {
+  return [1, 2, 3, 4, 5, 6, 7, 8].map(n => { const rec = irlib.find(r => r.name === slotAssign[n]); return rec ? { slot:n, rec, gain:gainOf(n), peak:Math.max(...Array.from(rec.s, Math.abs)) } : null; }).filter(Boolean);
+}
+$('#lvIrApply').onclick = async () => {
+  if (!irOff) return;
+  const items = irLevelItems();
+  if (!items.length) return toast('As IRs do pedal não estão na biblioteca: importe a pasta Irs e grave o kit pela página', true);
+  const plan = planIrLevel(irOff, items).filter(p => Math.abs(p.to - p.from) >= 0.5);
+  const miss = [1, 2, 3, 4, 5, 6, 7, 8].filter(n => !items.some(i => i.slot === n));
+  if (!plan.length) return toast('As IRs já estão niveladas (diferenças menores que 0,5 dB)');
+  if (!confirm('Regravar ' + plan.length + ' IR(s) com o volume corrigido?\n\n' + plan.map(p => `IR ${p.slot}: ${p.to - p.from >= 0 ? '+' : ''}${(p.to - p.from).toFixed(1)} dB`).join('\n') + (miss.length ? `\n\nAs IRs ${miss.join(', ')} não estão na biblioteca e ficam como estão.` : '') + '\n\nLeva uns 2 segundos por IR; não mexa no pedal.')) return;
+  irConfirmed = true;
+  try {
+    for (const p of plan) {
+      const it = items.find(i => i.slot === p.slot), g = Math.pow(10, p.to / 20);
+      await sendIR(p.slot, Float32Array.from(it.rec.s, x => x * g), irNames[p.slot] || shortName(it.rec), it.rec.rate, { libName:it.rec.name, select:false, gain:p.to });
+      irOff[p.slot] = (irOff[p.slot] || 0) + (p.to - p.from);   // estimativa do novo nível
+    }
+    store.set('irOff', irOff); toast('IRs regravadas. Meça as 8 de novo para conferir.');
+  } catch (err) { toast('Parou no meio: ' + err.message, true); }
+  renderIrResult(); renderIrs(); updLevelUi();
+};
+
 /* ======================= palco ======================= */
 /* Palco: grade de caixinhas. Cada uma é um preset; um toque carrega no pedal. */
-let stageSrc = store.get('stageSrc', 'bank');
+let stageSrc = store.get('stageSrc2', 'styles');
 function stageSources() {
-  const s = [{ id:'bank', name:'Modos do banco atual (' + SLOT[target] + ' · ' + bankName(target) + ')' }, { id:'ctx', name:'Lista atual' }];
+  const s = [{ id:'styles', name:'Estilos e momentos (tudo)' }];
+  if (styles.length) s.push({ id:'scat:Meus estilos', name:'Estilos · Meus estilos' });
+  [...new Set(STYLES.map(x => x.cat))].forEach(c => s.push({ id:'scat:' + c, name:'Estilos · ' + c }));
+  s.push({ id:'ctx', name:'Presets avulsos · lista atual' });
   if (presets.some(p => p.fav)) s.push({ id:'fav', name:'★ Favoritos' });
   setlists.forEach(l => s.push({ id:'set:' + l.id, name:'Setlist · ' + l.name }));
   if (presets.length) s.push({ id:'mine', name:'Todos os meus presets' });
@@ -1195,21 +1550,26 @@ function stageList(id) {
   if (id.startsWith('set:')) { const l = setlists.find(x => x.id === id.slice(4)); return l ? l.items.map(findP).filter(Boolean) : []; }
   if (id.startsWith('cat:')) return presets.filter(p => (p.tag || '').trim().toLowerCase() === id.slice(4));
   if (id.startsWith('tpl:')) return TEMPLATES.filter(t => t.tag === id.slice(4));
-  if (id === 'bank') return bankModes(SLOT[target]);
+  if (id === 'styles') return allStyles();
+  if (id.startsWith('scat:')) return allStyles().filter(s => (s.cat || 'Meus estilos') === id.slice(5));
   return ctx().list;
 }
-function stageCur() { const src = stageSources(); if (!src.some(s => s.id === stageSrc)) stageSrc = 'ctx'; return stageList(stageSrc); }
+function stageCur() { const src = stageSources(); if (!src.some(s => s.id === stageSrc)) stageSrc = 'styles'; return stageList(stageSrc); }
 function renderStage() {
   if ($('#stage').hidden || !cur) return;
-  const src = stageSources(); if (!src.some(s => s.id === stageSrc)) stageSrc = 'ctx';
+  const src = stageSources(); if (!src.some(s => s.id === stageSrc)) stageSrc = 'styles';
   $('#st-src').innerHTML = src.map(s => `<option value="${esc(s.id)}" ${s.id === stageSrc ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
-  $('#st-banks').innerHTML = SLOT.map((n, i) => `<button class="${i === target ? 'on' : ''}" data-i="${i}" style="--bc:${BANKS[n].col}" title="Toque na mesma letra que você pisou no pedal (tecla ${n})"><b>${n}</b><span>${esc(bankName(i))}</span></button>`).join('');
+  $('#st-banks').innerHTML = SLOT.map((n, i) => `<button class="${i === target ? 'on' : ''}" data-i="${i}" style="--bc:${PART[n].col}" title="Toque na mesma letra que você pisou no pedal (tecla ${n})"><b>${n}</b><span>${esc(partName(i))}</span></button>`).join('');
   const L = stageList(stageSrc);
-  // a caixinha acende se é o preset aberto, ou se tem exatamente o som que está no slot (ao trocar de banco)
-  const isOn = (p) => cur.id === p.id || (cur.slot != null && p.v.join() === cur.v.join());
-  $('#st-grid').innerHTML = L.length ? L.map((p, i) => `<button class="tile ${isOn(p) ? 'on' : ''}" data-i="${i}" style="--tc:${tagColor(p.tag)}"><span class="num">${i < 9 ? i + 1 : ''}</span>${esc(p.name)}<small>${esc(p.tag || 'sem categoria')} · ${esc(irText(p))}</small></button>`).join('')
+  // estilo: acende o que está no pedal; preset avulso: acende o aberto
+  const isOn = (p) => p.parts ? p.id === curStyleId : (cur.id === p.id || (cur.slot != null && p.v.join() === cur.v.join()));
+  $('#st-grid').innerHTML = L.length ? L.map((p, i) => p.parts
+    ? `<button class="tile ${isOn(p) ? 'on' : ''}" data-i="${i}" style="--tc:${STYLE_CAT_COL[p.cat || 'Meus estilos'] || '#d4b06a'}"><span class="num">${i < 9 ? i + 1 : ''}</span>${esc(p.name)}<small>${p.parts.map((x, j) => SLOT[j] + ' ' + esc(x.name)).join(' · ')}</small></button>`
+    : `<button class="tile ${isOn(p) ? 'on' : ''}" data-i="${i}" style="--tc:${tagColor(p.tag)}"><span class="num">${i < 9 ? i + 1 : ''}</span>${esc(p.name)}<small>${esc(p.tag || 'sem categoria')} · ${esc(irText(p))}</small></button>`).join('')
     : '<div class="empty" style="grid-column:1/-1">Nenhuma caixinha nesta lista. Escolha outra no menu acima.</div>';
-  $('#st-name').textContent = cur.name; $('#st-tag').textContent = [cur.tag, cur.note].filter(Boolean).join(' · ');
+  const st = findS(curStyleId);
+  $('#st-name').textContent = st ? st.name : cur.name;
+  $('#st-tag').textContent = 'Parte ' + SLOT[target] + ' · ' + partName(target) + ' · ' + PART[SLOT[target]].fn;
   renderStageVol();
   document.querySelector('.tile.on')?.scrollIntoView({ block:'nearest' });
 }
@@ -1220,19 +1580,19 @@ function renderStageVol() {
   $('#st-tg').innerHTML = [['TOM', 'sw3', 'var(--tone)', 'EQ · comp'], ['EFEITOS', 'sw2', 'var(--fx)', fx], ['IR', 'sw1', 'var(--ir)', ir === 0 ? 'desligada' : irShort(ir)]]
     .map(([n, key, col, sub]) => `<button class="${cur.v[K[key].id] ? 'on' : ''}" data-k="${key}" style="--cc:${col}">${n}<small>${esc(sub)}</small></button>`).join('');
 }
-function stagePick(i) { const L = stageList(stageSrc); if (!L[i]) return; loadPreset(L[i], null); }
+function stagePick(i) { const L = stageList(stageSrc), it = L[i]; if (!it) return; it.parts ? applyStyle(it) : loadPreset(it, null); }
 function stageNav(d) {
   const L = stageList(stageSrc); if (!L.length) return;
-  let i = L.findIndex(p => cur && p.id === cur.id); i = i < 0 ? (d > 0 ? 0 : L.length - 1) : (i + d + L.length) % L.length; loadPreset(L[i], null);
+  let i = L.findIndex(p => p.parts ? p.id === curStyleId : (cur && p.id === cur.id)); i = i < 0 ? (d > 0 ? 0 : L.length - 1) : (i + d + L.length) % L.length; stagePick(i);
 }
 $('#st-grid').onclick = (e) => { const t = e.target.closest('.tile'); if (t) stagePick(+t.dataset.i); };
 /* O pedal NÃO avisa qual slot está ativo (testado), então o Palco acompanha com um toque: a mesma letra que você pisou */
 function stageBank(i) {
   if (!dev || i === target) return;
-  loadSlot(i); if (stageSrc !== 'bank') { stageSrc = 'bank'; store.set('stageSrc', 'bank'); renderStage(); }
+  loadSlot(i);
 }
 $('#st-banks').onclick = (e) => { const b = e.target.closest('button'); if (b) stageBank(+b.dataset.i); };
-$('#st-src').onchange = (e) => { stageSrc = e.target.value; store.set('stageSrc', stageSrc); renderStage(); };
+$('#st-src').onchange = (e) => { stageSrc = e.target.value; store.set('stageSrc2', stageSrc); renderStage(); };
 $('#st-tg').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const k = K[b.dataset.k].id; pushHist(); setVal(k, cur.v[k] ? 0 : 1); };
 $('#st-volr').onpointerdown = () => pushHist();
 $('#st-volr').oninput = (e) => { setVal(K.volume.id, +e.target.value); knobs[K.volume.id]?.draw(); };
@@ -1321,7 +1681,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 renderSlots(); renderList(); updUndo();
 
 /* ======================= modos de teste (#demo, #stage, #selftest) ======================= */
-if (/^#(demo|stage|selftest|irtab)/.test(location.hash)) {
+if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
   startDemo();
   if (location.hash === '#irtab') {
     const mk = (name, cat, sub, rate, en) => ({ id:cat + sub + name, name, cat, sub, rate, ms:42.7, en, s:Float32Array.from({ length:512 }, (_, i) => Math.sin(i * 0.35) * Math.exp(-i / (60 + name.length * 9)) * (i ? 1 : 0.8)) });
@@ -1330,9 +1690,16 @@ if (/^#(demo|stage|selftest|irtab)/.test(location.hash)) {
   }
   if (location.hash.startsWith('#demo-kit')) {   // só para capturas de tela: nomes do kit em memória, nada é salvo
     IRKIT.forEach(k => irNames[k.slot] = k.label);
-    loadPreset(TEMPLATES.find(t => t.id === 'tpl-a-ritmo'), null);
+    loadSlot(0);
     if (location.hash === '#demo-kit-edit') setView('edit');
+    if (location.hash === '#demo-kit-level') { lvMeas = [-21.4, -19.2, -22.6]; openLevel(); }
   }
+  if (location.hash === '#metertest') (async () => {   // só para teste com o microfone falso do Chrome
+    let r;
+    try { await meterDevices(); await meterStart(); const a = await captureLufs(2.5, 0.5); const b = await captureLufs(2.5, 0.5); r = `ok entradas=${$('#lvDev').options.length} medida1=${a?.toFixed(2)} medida2=${b?.toFixed(2)} agora=${$('#lvNow').textContent}`; }
+    catch (e) { r = 'erro ' + e.name + ': ' + e.message; }
+    meterStop(); fetch('/__result', { method:'POST', body:r + '\nDONE\n--LOG--\n' });
+  })();
   if (location.hash === '#stage') { view.filter = 'tpl'; renderList(); loadPreset(TEMPLATES[1], null); openStage(); }
   if (location.hash === '#selftest') (async () => {
     const r = []; const ok = (n, c) => { r.push((c ? 'PASS ' : 'FAIL ') + n); document.body.dataset.selftest = r.join(' | '); try { fetch('/__result', { method:'POST', body:r.join('\n') + '\n--LOG--\n' + $('#log').textContent }); } catch {} };
@@ -1360,48 +1727,69 @@ if (/^#(demo|stage|selftest|irtab)/.test(location.hash)) {
       const s = { id:uid(), name:'Show', items:[TEMPLATES[2].id, p.id, TEMPLATES[2].id] }; setlists.push(s);
       view.tab = 'set'; view.setlist = s.id; renderList(); loadPreset(TEMPLATES[2], 0); nav(1); ok('setlist próximo', cur.id === p.id); nav(1); ok('setlist repetido', cur.id === TEMPLATES[2].id && view.pos === 2); nav(1); ok('setlist volta ao início', view.pos === 0);
       loadSlot(0, true); ok('voltar ao pedal', cur.v.join() === C.map(c => devSaved[c.id]).join() && dev.join() === devSaved.join());
-      ok('slot B', (loadSlot(1), cur.v[0] === TEMPLATES.find(t => t.bank === 'B').v[0] && target === 1));
+      ok('slot B', (loadSlot(1), cur.v[0] === STYLES[0].parts[1].v[0] && target === 1));
       pushHist(); setVal(K.sw2.id, 0); ok('seção desligada', $('#c-fx').classList.contains('off'));
       const d = Cube.parseDump(Cube.buildDump(dev, Cube.HDR_READ)); ok('dump ida e volta', d.checksumOk && d.data.join() === dev.join());
       ok('mensagem param', Cube.paramMsg(5, 67).length === 21);
       ok('modelos válidos (13 valores dentro das faixas, ids únicos)', TEMPLATES.every(t => t.v.length === 13 && t.v.every((x, k) => Number.isInteger(x) && x >= 0 && x <= C[k].max)) && new Set(TEMPLATES.map(t => t.id)).size === TEMPLATES.length);
       ok('zonas: mod e space', ZONES.mod.text(7) === 'desligado' && ZONES.mod.text(0).startsWith('chorus 100') && ZONES.mod.text(15).startsWith('trêmolo 100') && ZONES.space.text(15) === 'desligado' && ZONES.space.text(0).startsWith('reverb 100') && ZONES.space.text(31).startsWith('delay 100') && ZONES.space.text(13).startsWith('reverb') && ZONES.space.text(17).startsWith('delay'));
-      ok('nenhum modo dos bancos usa chorus (trocado por trêmolo)', TEMPLATES.filter(t => t.bank).every(t => t.v[K.mod.id] >= 7));
-      ok('oração e introdução usam trêmolo', ['tpl-a-oracao', 'tpl-b-intro'].every(id => modName(TEMPLATES.find(t => t.id === id).v[K.mod.id]) === 'trêmolo'));
-      // bancos A/B/C: modos, IRs do banco, destaque
-      { ok('bancos: 4 modos em cada banco', ['A', 'B', 'C'].every(L => TEMPLATES.filter(t => t.bank === L).length === 4));
-        ok('bancos: cada modo usa uma IR do próprio banco', TEMPLATES.filter(t => t.bank).every(t => BANKS[t.bank].irs.includes(t.v[K.ircab.id])));
-        ok('bancos: kit cobre exatamente as IRs dos bancos', IRKIT.map(k => k.slot).join() === [...BANKS.A.irs, ...BANKS.B.irs, ...BANKS.C.irs].join());
-        loadSlot(2); ok('trocar para o banco C', target === 2 && document.querySelector('.bank.on')?.dataset.i === '2' && /pise em <b>C<\/b>/.test($('#bankhint').innerHTML));
-        ok('banco C mostra os seus 4 modos + salvar', document.querySelectorAll('#modes .mode:not(.add)').length === bankModes('C').length && $('#modeAdd') != null);
-        document.querySelector('#modes .mode[data-id="tpl-c-pagode"]').click();
-        ok('tocar no modo carrega no slot C com a IR do modo', cur.id === 'tpl-c-pagode' && dev[16 * 2 + K.ircab.id] === 7 && document.querySelector('#modes .mode.on')?.dataset.id === 'tpl-c-pagode');
-        ok('IR card destaca só as IRs do banco C', [...document.querySelectorAll('#irs button.inbank')].map(b => b.dataset.i).join() === '7,8');
-        ok('controles rápidos mostram as IRs do banco', [...document.querySelectorAll('#qirs .qir[data-ir]')].filter(b => b.dataset.ir !== 'more').map(b => b.dataset.ir).join() === '7,8');
+      ok('nenhuma parte de estilo usa chorus', STYLES.every(s => s.parts.every(p => p.v[K.mod.id] >= 7)));
+      ok('introdução melancólica usa trêmolo leve', modName(findS('st-intro-melancolica').parts[0].v[K.mod.id]) === 'trêmolo');
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      // estilos: A/B/C como partes da música
+      { ok('estilos: 8 de fábrica, 3 partes válidas em cada', STYLES.length === 8 && STYLES.every(s => s.parts.length === 3 && s.parts.every(p => p.v.length === 13 && p.v.every((x, k) => Number.isInteger(x) && x >= 0 && x <= C[k].max))));
+        ok('estilos: C (destaque) mais alto que A e B em todos', STYLES.every(s => s.parts[2].v[K.volume.id] > s.parts[0].v[K.volume.id] && s.parts[2].v[K.volume.id] > s.parts[1].v[K.volume.id]));
+        ok('estilos: fundo para pregação fica baixo (≤ 100)', findS('st-pregacao').parts.every(p => p.v[K.volume.id] <= 100));
+        ok('estilos: só usam as IRs do kit (1-8)', STYLES.every(s => s.parts.every(p => p.v[K.ircab.id] >= 1 && p.v[K.ircab.id] <= 8)));
+        renderSlots(); ok('tela: estilos agrupados por categoria', document.querySelectorAll('#styles .style').length === allStyles().length && [...document.querySelectorAll('#styles .grp')].map(g => g.textContent).join('|').includes('Momentos'));
+        const nB = pedalBackups.length;
+        document.querySelector('#styles .style[data-id="st-bossa"]').click(); await sleep(60);
+        ok('tocar num estilo grava A, B e C no pedal', [0, 1, 2].every(s => findS('st-bossa').parts[s].v.every((x, k) => dev[16 * s + C[k].id] === x)) && curStyleId === 'st-bossa' && pedalBackups.length === nB + 1);
+        ok('cartão mostra o estilo e as 3 partes', $('#scName').textContent === 'Bossa nova' && document.querySelectorAll('#banks .bank').length === 3 && $('#banks').textContent.includes('Voz e violão'));
+        loadSlot(1); ok('parte B selecionada com o nome da parte', target === 1 && cur.name === 'B · Batida bossa');
+        pushHist(); setVal(K.volume.id, 77); renderSlots(); ok('estilo alterado aparece no cartão', $('#scName').textContent.includes('alterado'));
+        const mine = saveStyle('Bossa do domingo'); ok('salvar como estilo seu', mine && styles[0] === mine && mine.parts[1].v[K.volume.id] === 77 && curStyleId === mine.id && !mine.tpl);
+        await undoStyle(); ok('estilo anterior volta o pedal', curStyleId === 'st-louvor' && [0, 1, 2].every(s => STYLES[0].parts[s].v.every((x, k) => dev[16 * s + C[k].id] === x)));
+        styles = styles.filter(x => x !== mine); store.set('styles', styles);
+        ok('controles rápidos mostram as 8 IRs', document.querySelectorAll('#qirs .qir').length === 8);
         document.querySelector('#qirs .qir[data-ir="8"]').click(); ok('trocar IR pelos controles rápidos', cur.v[K.ircab.id] === 8);
-        const n0 = presets.length; $('#modeAdd').click(); ok('salvar como modo do banco C', presets.length === n0 + 1 && presets[0].bank === 'C' && bankModes('C').includes(presets[0]));
-        const mine = presets[0]; presets = presets.filter(x => x !== mine); persist();
         setView('edit'); ok('navegação: Ajustar', document.body.dataset.v === 'edit'); setView('play'); ok('navegação: Tocar', document.body.dataset.v === 'play');
         loadSlot(0); }
+      // nivelamento: medida de volume e planos (sem áudio real)
+      { ok('LUFS: valor de um bloco constante', Math.abs(integrate(Array(20).fill(0.5)) - (-0.691 + 10 * Math.log10(0.5))) < 0.01);
+        ok('LUFS: ignora o silêncio entre as notas', Math.abs(integrate([...Array(10).fill(0.01), ...Array(10).fill(1e-12)]) - blockLufs(0.01)) < 0.01);
+        ok('LUFS: nada tocado = sem medida', integrate(Array(10).fill(1e-12)) === null);
+        const keepScale = volScale; volScale = null;
+        ok('escala estimada: 127 = 0 dB, 64 ≈ -6 dB, ida e volta', Math.abs(volToDb(127)) < 0.01 && Math.abs(volToDb(64) + 5.95) < 0.1 && dbToVol(volToDb(90)) === 90);
+        const pl = planLevel([-20, -23, -22], [100, 100, 100], 2);
+        ok('plano: A e B no mesmo nível, C +2 dB acima', Math.abs(pl[0].delta + 1.5) < 1e-9 && Math.abs(pl[1].delta - 1.5) < 1e-9 && Math.abs(pl[2].delta - 2.5) < 1e-9 && pl[0].to < 100 && pl[1].to > 100 && pl[2].to > 100);
+        const pc = planLevel([-20, -20, -26], [100, 100, 120], 2);   // C precisaria de +8 dB: não cabe no knob
+        ok('plano: avisa quando passa do limite do volume', pc[2].clamped === true && pc[2].to === 127 && pc[0].clamped === false);
+        ok('plano: só C medida usa C como referência', planLevel([null, null, -20], [100, 100, 110], 2)[2].delta === 0);
+        volScale = [{ v:60, db:-12 }, { v:80, db:-8 }, { v:100, db:-4 }, { v:120, db:-0.5 }];
+        ok('escala medida: interpola e extrapola', Math.abs(volToDb(90) + 6) < 1e-9 && Math.abs(volToDb(40) + 16) < 1e-9 && dbToVol(-6) === 90);
+        volScale = keepScale;
+        const pi = planIrLevel({ 1:3, 2:-2, 3:0 }, [{ slot:1, gain:0, peak:0.5 }, { slot:2, gain:0, peak:0.95 }, { slot:3, gain:-1, peak:0.5 }]), sh = 20 * Math.log10(0.98 / 0.95) - 2;
+        ok('IRs: plano nivela e, se uma não pode subir, todas descem juntas', Math.abs(pi[0].to - (-3 + sh)) < 1e-9 && Math.abs(pi[1].to - (2 + sh)) < 1e-9 && Math.abs(pi[2].to - (-1 + sh)) < 1e-9);
+        const keepOff = irOff; irOff = { 1:2, 3:-1 };
+        ok('troca de IR compensa o volume medido', irDelta(1, 3) === 3 && irDelta(3, 1) === -3 && irDelta(1, 5) === 0);
+        irOff = keepOff; }
       { irNames[5] = 'Minha IR'; ok('IR por nome exato (presets seus)', irFor({ ir:'Minha IR' }).slot === 5 && irFor({ ir:'não existe' }).msg); delete irNames[5]; }
       { cur.v[K.ircab.id] = 5; loadPreset(TEMPLATES.find(t => t.id === 'tpl-seco')); ok('modelo mantém a IR selecionada', cur.v[K.ircab.id] === 5);
         loadPreset(TEMPLATES.find(t => t.id === 'tpl-sem-ir')); ok('modelo "Sem IR" desliga a IR', cur.v[K.ircab.id] === 0 && cur.v[K.sw1.id] === 0); }
       // Palco: caixinhas
-      { loadSlot(2); stageSrc = 'bank'; $('#stage').hidden = false; renderStage();
-        const tiles = document.querySelectorAll('#st-grid .tile'); ok('palco: caixinhas = modos do banco C', tiles.length === 4);
-        stagePick(1); ok('palco: tocar na caixinha carrega o preset', cur.id === 'tpl-c-voz' && document.querySelectorAll('#st-grid .tile.on').length === 1);
-        stageNav(1); ok('palco: próximo', cur.id === 'tpl-c-pagode'); stageNav(1); stageNav(1); ok('palco: volta ao início', cur.id === 'tpl-c-bossa');
-        const v0 = cur.v[K.volume.id]; $('#st-vp').click(); ok('palco: volume +4', cur.v[K.volume.id] === v0 + 4);
+      { loadSlot(2); stageSrc = 'styles'; $('#stage').hidden = false; renderStage();
+        ok('palco: caixinhas = todos os estilos', document.querySelectorAll('#st-grid .tile').length === allStyles().length);
+        stageSrc = 'scat:Momentos'; renderStage(); ok('palco: filtro Momentos', document.querySelectorAll('#st-grid .tile').length === 3);
+        stagePick(0); await sleep(60); ok('palco: tocar na caixinha coloca o estilo no pedal', curStyleId === 'st-pregacao' && document.querySelectorAll('#st-grid .tile.on').length === 1);
+        stageNav(1); await sleep(60); ok('palco: próximo estilo', curStyleId === 'st-intro-melancolica');
+        const v0 = cur.v[K.volume.id]; $('#st-vp').click(); ok('palco: volume +4', cur.v[K.volume.id] === Math.min(127, v0 + 4));
         const sw = cur.v[K.sw2.id]; document.querySelector('#st-tg button[data-k="sw2"]').click(); ok('palco: liga/desliga bloco', cur.v[K.sw2.id] === 1 - sw);
-        ok('palco: fontes incluem o banco atual e os modelos', stageSources()[0].id === 'bank' && stageSources().some(s => s.id === 'tpl:Louvor'));
-        ok('palco: botões A/B/C no topo', document.querySelectorAll('#st-banks button').length === 3 && document.querySelector('#st-banks button.on')?.dataset.i === '2');
-        document.querySelector('#st-banks button[data-i="1"]').click();
-        ok('palco: tocar em B troca o banco e mostra os modos de B', target === 1 && document.querySelectorAll('#st-grid .tile').length === 4 && document.querySelector('#st-grid .tile')?.textContent.includes('Introdução'));
-        document.dispatchEvent(new KeyboardEvent('keydown', { key:'c' }));
-        ok('palco: tecla C troca para o banco C', target === 2 && document.querySelector('#st-banks button.on')?.dataset.i === '2');
-        stageSrc = 'tpl:Louvor'; renderStage(); document.dispatchEvent(new KeyboardEvent('keydown', { key:'a' }));
-        ok('palco: trocar de banco volta para os modos do banco', target === 0 && stageSrc === 'bank');
-        $('#stage').hidden = true; stageSrc = 'bank'; loadSlot(0); }
+        ok('palco: botões A/B/C mostram as partes do estilo', document.querySelectorAll('#st-banks button').length === 3 && $('#st-banks').textContent.includes('Arpejo escuro'));
+        document.querySelector('#st-banks button[data-i="1"]').click(); ok('palco: tocar em B seleciona a parte B', target === 1 && $('#st-tag').textContent.includes('Parte B'));
+        document.dispatchEvent(new KeyboardEvent('keydown', { key:'c' })); ok('palco: tecla C seleciona a parte C', target === 2);
+        ok('palco: fontes por categoria de estilo', stageSources()[0].id === 'styles' && stageSources().some(s => s.id === 'scat:Louvor'));
+        $('#stage').hidden = true; stageSrc = 'styles'; loadSlot(0); }
       // fila: simula o pedal confirmando cada mensagem e confere que nada se perde
       { const sentMsgs = []; const fakeOut = { send:(m) => { sentMsgs.push(m); setTimeout(onAck, 1); } };
         out = fakeOut; demo = false; loadPreset(TEMPLATES[1]);
