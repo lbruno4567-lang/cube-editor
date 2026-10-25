@@ -181,9 +181,13 @@
   .lv-dev, .lv-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; } .lv-dev select { flex:1 1 220px; }
   .lv-meter { display:flex; align-items:center; gap:10px; margin:6px 0 10px; } .lv-meter b { min-width:90px; text-align:right; font-variant-numeric:tabular-nums; }
   .lv-bar { flex:1; height:14px; border-radius:7px; background:var(--s3); overflow:hidden; } .lv-bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--acc),var(--tone)); transition:width .08s; }
+  #lvChart { width:100%; height:90px; background:var(--s2); border-radius:10px; display:block; margin:0 0 6px; }
+  .lv-how { margin:6px 0; font-size:13px; } .lv-how summary { cursor:pointer; color:var(--acc); } .lv-how ol { padding-left:18px; margin:6px 0; } .lv-how li { margin-bottom:6px; }
+  .lvp .warn { color:var(--warn); }
   .lv-sec { border-top:1px solid var(--line); padding-top:10px; margin-top:10px; } .lv-sec h4 { margin:0 0 4px; }
   .lvp { display:grid; grid-template-columns:auto 1fr auto auto; gap:8px; align-items:center; padding:6px 0; border-bottom:1px dashed var(--line); }
   .lvp b.l { color:var(--bc); font-size:20px; } .lvp .r { font-variant-numeric:tabular-nums; font-size:13px; text-align:right; }
+  .lvin { width:64px; text-align:right; padding:5px 6px; font-variant-numeric:tabular-nums; }
   .lv-res { font-size:12.5px; font-variant-numeric:tabular-nums; } .lv-res table { width:100%; border-collapse:collapse; } .lv-res td { padding:3px 4px; border-bottom:1px dashed var(--line); }
   .kitbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:12px 14px; border-radius:14px; border:1px solid var(--acc); background:color-mix(in srgb, var(--acc) 9%, var(--s1)); font-size:13px; }
   .kitbar[hidden] { display:none; } .kitbar span { flex:1 1 260px; } .kitbar b { color:var(--acc); }
@@ -419,24 +423,30 @@
   <p class="tiny muted">O app ouve a saída USB do pedal (no PC aparece como “Linha (USB-Audio)”) enquanto você toca, e mede o volume percebido (LUFS, o padrão de rádio e streaming). Ouça normalmente pelo fone ou pela caixa.</p>
   <div class="lv-dev"><select id="lvDev"><option value="">Entrada de áudio…</option></select><button id="lvStart" class="pri">Ligar medidor</button></div>
   <div class="lv-meter"><div class="lv-bar"><i id="lvBar"></i></div><b id="lvNow">— LUFS</b></div>
-  <section class="lv-sec">
-    <h4>0 · Escala do knob de volume (uma vez só)</h4>
-    <p class="tiny muted">Pise a letra selecionada no app e toque acordes contínuos por uns 14 segundos; o app muda o volume (120 → 100 → 80 → 60) e aprende quantos dB cada passo vale no seu pedal. Sem isso, o ajuste usa uma estimativa.</p>
-    <div class="lv-row"><button id="lvScale">Medir escala</button><span class="tiny muted" id="lvScaleRes"></span></div>
-  </section>
+  <canvas id="lvChart" width="600" height="90"></canvas>
+  <details class="lv-how"><summary>Como funciona (e um teste rápido de 10 segundos)</summary>
+    <p class="tiny"><b>Teste:</b> ligue o medidor e toque acordes contínuos. A linha dourada deve subir para algo entre <b>−30 e −12</b> e cair abaixo de −60 quando você parar. Se não sobe, escolha outra entrada de áudio na lista.</p>
+    <p class="tiny muted"><b>Por que automático:</b> o seu toque varia uns ±3 dB, o que é maior que as diferenças que queremos acertar (1 a 2 dB). Então o app <b>copia, de forma temporária, o som de cada letra para a letra A</b>, alterna várias vezes e compara dentro de cada rodada. Você não pisa em nada: fica na letra A, toca sempre o mesmo acorde (uma batida por segundo, mesma força) e o app devolve o pedal ao que estava. Nada é gravado até você clicar em Aplicar.</p>
+  </details>
   <section class="lv-sec">
     <h4>1 · Partes do estilo (A, B, C)</h4>
-    <p class="tiny muted">Para cada letra: pise nela no pedal, aperte <b>Medir</b> e toque <b>como você toca naquela parte</b> (dedilhado na A, levada na B, solo na C) por 8 segundos.</p>
+    <p class="tiny muted">Pedal na letra <b>A</b> e volume físico no <b>máximo</b>. Toque o <b>mesmo acorde, uma batida por segundo, com a mesma força</b>. Dura 2 min 40 (8 rodadas).</p>
+    <div class="lv-row"><button id="lvAuto" class="pri">▶ Medir A, B e C automaticamente</button><button id="lvStop" hidden>Parar</button></div>
+    <div id="lvAutoNote" class="tiny muted"></div>
     <div id="lvParts"></div>
     <div class="lv-row"><label class="tiny">Destaque (C) acima de A e B: <select id="lvBoost"><option value="0">0 dB</option><option value="1">+1 dB</option><option value="2" selected>+2 dB</option><option value="3">+3 dB</option><option value="4">+4 dB</option></select></label>
       <button id="lvApply" class="pri" disabled>Aplicar volumes e gravar no pedal</button></div>
   </section>
   <section class="lv-sec">
     <h4>2 · As 8 IRs</h4>
-    <p class="tiny muted">Pise no pedal a <b>mesma letra que está selecionada no app</b> e toque acordes contínuos, sempre igual, por uns 30 segundos. O app troca a IR sozinho (1 → 8) e mede cada uma.</p>
+    <p class="tiny muted">Pedal na letra <b>A</b>, mesmo acorde, mesma força. O app troca a IR sozinho nas 8 posições, em 3 rodadas de ordem diferente, e mede cada uma. Dura 2 min.</p>
     <div class="lv-row"><button id="lvIrs">Medir as 8 IRs</button><button id="lvIrApply" class="pri" disabled>Regravar IRs com volume igual</button></div>
     <div id="lvIrRes" class="lv-res"></div>
   </section>
+  <details class="lv-how"><summary>Avançado: medir de novo a curva do knob de volume</summary>
+    <p class="tiny muted">A curva já vem medida no seu pedal (volume 127 = 0 dB, 90 = −1,9 dB, 50 = −8,6 dB). Só repita se trocar de pedal. Pedal na letra A, acordes contínuos, uns 25 segundos.</p>
+    <div class="lv-row"><button id="lvScale">Medir escala</button><span class="tiny muted" id="lvScaleRes"></span></div>
+  </details>
 </dialog>
 <nav class="bnav" id="bnav">
   <button data-v="play" class="on"><i>🎸</i><span>Tocar</span></button>
@@ -462,7 +472,7 @@ const vec = (o) => C.map(c => o[c.key]);
 const MOD_OFF = 7, SPACE_OFF = 15;
 const NEUTRAL = { treb:64, mid:64, bass:64, time:30, mod:MOD_OFF, volume:100, antifb:3, space:SPACE_OFF, comp:2, ircab:1, sw1:1, sw2:1, sw3:1 };
 const FACTORY_IR = ['', 'Mart 45 Piezo 3C', 'Acoustic2-Impulse', 'Wurlitzer 1', 'Mart 45 Soundhole 5c', 'Soldano 2inch', 'On Axis grille', 'Taylor 314ce Soundelux', 'Pro Jr floor'];
-const APP_VERSION = 'v4 · estilos';
+const APP_VERSION = 'v5 · nivelamento';
 /* Os 3 botões do pedal são as 3 PARTES de uma música, sempre com o mesmo papel (o pé decora):
      A = base suave (dedilhado, estrofe) · B = ritmo (levada, refrão) · C = destaque (solo, preenchimento)
    Um ESTILO (louvor, bossa, pregação...) define as 3 partes e é gravado no pedal de uma vez.
@@ -474,44 +484,46 @@ const PART = {
 };
 const mkP = (name, over) => ({ name, v:vec({ ...NEUTRAL, ...over }) });
 const mkS = (id, cat, name, note, a, b, c) => ({ id:'st-' + id, tpl:1, cat, name, note, parts:[a, b, c] });
-/* Regras usadas (referências no chat): dedilhado soa mais baixo que levada, então A ganha um pouco de volume e
-   médio; C (solo) fica ~2-3 dB acima e usa delay em vez de muito reverb; fundo para pregação é baixo e ambiente
-   para a voz continuar clara; modulação com moderação. Volumes aqui são o ponto de partida: o "Nivelar volume"
-   mede o som real e acerta. EQ 64 = meio. IRs: 1 Lucero · 2 OM-28 · 3 Lowden Old Lady · 4 Lowden K&K ·
-   5 McIlroy A30 · 6 McIlroy A25c · 7 Eastman · 8 Classical K&K (o kit da aba IRs). */
+/* Regras: dedilhado soa mais baixo que levada; C (solo) fica ~2 dB acima e usa delay em vez de muito reverb; fundo para
+   pregação é baixo e ambiente para a voz continuar clara; modulação com moderação. EQ 64 = meio.
+   VOLUMES (curva medida no seu pedal: dB = -0,00145·(127-v)², o volume só abaixa e quase não mexe acima de 110):
+   "Louvor padrão" tem os volumes MEDIDOS e conferidos (A 90 · B 81 · C 127). Nos outros estilos os volumes são um ponto de
+   partida no mesmo padrão (A ≈ -2 dB, B ≈ -2 a -3 dB, C = máximo; fundo para pregação ≈ -6 dB): rode "Nivelar volume" depois
+   de gravar cada estilo. IRs: 1 Lucero · 2 OM-28 · 3 Lowden Old Lady · 4 Lowden K&K · 5 McIlroy A30 · 6 McIlroy A25c ·
+   7 Eastman · 8 Classical K&K (o kit da aba IRs). */
 const STYLES = [
   mkS('louvor', 'Louvor', 'Louvor padrão', 'Dedilhado na estrofe, levada no refrão, solo no instrumental.',
-    mkP('Dedilhado', { ircab:3, comp:3, antifb:4, bass:60, mid:66, treb:62, space:9, volume:104 }),
-    mkP('Ritmo', { ircab:1, comp:4, antifb:5, bass:54, mid:62, treb:60, space:11, volume:98 }),
-    mkP('Solo', { ircab:2, comp:4, antifb:5, bass:52, mid:74, treb:64, space:22, time:50, volume:110 })),
+    mkP('Dedilhado', { ircab:3, comp:3, antifb:4, bass:60, mid:66, treb:62, space:9, volume:90 }),
+    mkP('Ritmo', { ircab:1, comp:4, antifb:5, bass:54, mid:62, treb:60, space:11, volume:81 }),
+    mkP('Solo', { ircab:2, comp:4, antifb:5, bass:52, mid:74, treb:64, space:22, time:50, volume:127 })),
   mkS('celebracao', 'Louvor', 'Louvor animado', 'Celebração: tudo mais brilhante e firme; solo com eco curto.',
-    mkP('Ritmo brilhante', { ircab:4, comp:4, antifb:5, bass:54, mid:64, treb:66, space:12, volume:102 }),
-    mkP('Ritmo cheio', { ircab:2, comp:5, antifb:6, bass:52, mid:64, treb:62, space:13, volume:98 }),
-    mkP('Solo com eco', { ircab:4, comp:4, antifb:5, bass:52, mid:76, treb:64, space:20, time:22, volume:112 })),
+    mkP('Ritmo brilhante', { ircab:4, comp:4, antifb:5, bass:54, mid:64, treb:66, space:12, volume:88 }),
+    mkP('Ritmo cheio', { ircab:2, comp:5, antifb:6, bass:52, mid:64, treb:62, space:13, volume:86 }),
+    mkP('Solo com eco', { ircab:4, comp:4, antifb:5, bass:52, mid:76, treb:64, space:20, time:22, volume:127 })),
   mkS('adoracao', 'Louvor', 'Adoração intimista', 'Músicas lentas: ambiente na base, ritmo suave, melodia com delay longo.',
-    mkP('Dedilhado ambiente', { ircab:3, comp:2, antifb:4, bass:62, mid:58, treb:58, space:4, volume:104 }),
-    mkP('Ritmo suave', { ircab:1, comp:3, antifb:4, bass:58, mid:60, treb:58, space:8, volume:98 }),
-    mkP('Melodia com delay', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:60, space:25, time:70, volume:110 })),
+    mkP('Dedilhado ambiente', { ircab:3, comp:2, antifb:4, bass:62, mid:58, treb:58, space:4, volume:86 }),
+    mkP('Ritmo suave', { ircab:1, comp:3, antifb:4, bass:58, mid:60, treb:58, space:8, volume:88 }),
+    mkP('Melodia com delay', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:60, space:25, time:70, volume:127 })),
   mkS('pregacao', 'Momentos', 'Fundo para pregação', 'Por baixo da fala: volume baixo, delay longo como "pad", voz sempre clara.',
-    mkP('Fundo (pad)', { ircab:3, comp:2, antifb:5, bass:56, mid:52, treb:50, space:28, time:100, volume:90 }),
-    mkP('Fundo com reverb', { ircab:3, comp:2, antifb:5, bass:58, mid:54, treb:52, space:1, volume:90 }),
-    mkP('Crescendo / apelo', { ircab:1, comp:3, antifb:5, bass:58, mid:60, treb:56, space:5, volume:100 })),
+    mkP('Fundo (pad)', { ircab:3, comp:2, antifb:5, bass:56, mid:52, treb:50, space:28, time:100, volume:63 }),
+    mkP('Fundo com reverb', { ircab:3, comp:2, antifb:5, bass:58, mid:54, treb:52, space:1, volume:63 }),
+    mkP('Crescendo / apelo', { ircab:1, comp:3, antifb:5, bass:58, mid:60, treb:56, space:5, volume:90 })),
   mkS('intro-melancolica', 'Momentos', 'Introdução melancólica', 'Arpejo escuro com reverb longo e um trêmolo leve; melodia com delay.',
-    mkP('Arpejo escuro', { ircab:8, comp:2, antifb:4, bass:64, mid:56, treb:48, space:3, mod:10, volume:104 }),
-    mkP('Dedilhado aberto', { ircab:3, comp:3, antifb:4, bass:60, mid:60, treb:58, space:6, volume:100 }),
-    mkP('Melodia', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:58, space:23, time:60, volume:110 })),
+    mkP('Arpejo escuro', { ircab:8, comp:2, antifb:4, bass:64, mid:56, treb:48, space:3, mod:10, volume:86 }),
+    mkP('Dedilhado aberto', { ircab:3, comp:3, antifb:4, bass:60, mid:60, treb:58, space:6, volume:90 }),
+    mkP('Melodia', { ircab:5, comp:4, antifb:5, bass:54, mid:72, treb:58, space:23, time:60, volume:127 })),
   mkS('intro-animada', 'Momentos', 'Introdução animada', 'Riff brilhante com eco curto, levada cheia e solo com presença.',
-    mkP('Riff brilhante', { ircab:4, comp:5, antifb:5, bass:52, mid:70, treb:66, space:19, time:18, volume:106 }),
-    mkP('Ritmo cheio', { ircab:2, comp:5, antifb:6, bass:52, mid:64, treb:62, space:13, volume:98 }),
-    mkP('Solo com presença', { ircab:4, comp:5, antifb:5, bass:50, mid:80, treb:62, space:12, volume:112 })),
+    mkP('Riff brilhante', { ircab:4, comp:5, antifb:5, bass:52, mid:70, treb:66, space:19, time:18, volume:90 }),
+    mkP('Ritmo cheio', { ircab:2, comp:5, antifb:6, bass:52, mid:64, treb:62, space:13, volume:86 }),
+    mkP('Solo com presença', { ircab:4, comp:5, antifb:5, bass:50, mid:80, treb:62, space:12, volume:127 })),
   mkS('bossa', 'Bossa e MPB', 'Bossa nova', 'Voz e violão macio, batida com grave, melodia com delay discreto.',
-    mkP('Voz e violão', { ircab:8, comp:2, antifb:3, bass:64, mid:56, treb:44, space:12, volume:102 }),
-    mkP('Batida bossa', { ircab:8, comp:3, antifb:3, bass:70, mid:60, treb:46, space:10, volume:98 }),
-    mkP('Melodia', { ircab:7, comp:4, antifb:3, bass:62, mid:70, treb:54, space:21, time:40, volume:108 })),
+    mkP('Voz e violão', { ircab:8, comp:2, antifb:3, bass:64, mid:56, treb:44, space:12, volume:90 }),
+    mkP('Batida bossa', { ircab:8, comp:3, antifb:3, bass:70, mid:60, treb:46, space:10, volume:88 }),
+    mkP('Melodia', { ircab:7, comp:4, antifb:3, bass:62, mid:70, treb:54, space:21, time:40, volume:127 })),
   mkS('pagode', 'Bossa e MPB', 'Pagode / samba', 'Levada com ataque e médio; fraseado com eco curto.',
-    mkP('Levada leve', { ircab:7, comp:4, antifb:4, bass:60, mid:64, treb:56, space:13, volume:100 }),
-    mkP('Levada forte', { ircab:7, comp:5, antifb:4, bass:58, mid:68, treb:58, space:14, volume:98 }),
-    mkP('Fraseado / solo', { ircab:4, comp:4, antifb:4, bass:54, mid:74, treb:60, space:20, time:20, volume:110 })),
+    mkP('Levada leve', { ircab:7, comp:4, antifb:4, bass:60, mid:64, treb:56, space:13, volume:88 }),
+    mkP('Levada forte', { ircab:7, comp:5, antifb:4, bass:58, mid:68, treb:58, space:14, volume:86 }),
+    mkP('Fraseado / solo', { ircab:4, comp:4, antifb:4, bass:54, mid:74, treb:60, space:20, time:20, volume:127 })),
 ];
 const mkU = (id, name, note, over) => ({ id:'tpl-' + id, tpl:1, name, tag:'Utilidades', note, v:vec({ ...NEUTRAL, ...over }) });
 /* As partes de cada estilo também ficam na biblioteca como "modelos" avulsos (para usar uma parte só) */
@@ -1218,7 +1230,20 @@ function irLevelDb(s) {
   for (let k = Math.ceil(200 * N / 48000); k * 48000 / N < 5000; k++) { acc += re[k] * re[k] + im[k] * im[k]; n++; }
   return 10 * Math.log10(acc / n + 1e-30);
 }
-const lvlOf = (r) => r._lvl ?? (r._lvl = irLevelDb(r.s));
+/* Volume percebido de uma IR: ruído rosa passando pela IR e pelo filtro K (o mesmo que o medidor usa), banda de 60 Hz a 12 kHz.
+   Mais fiel ao que o ouvido e o LUFS percebem do que a média plana de 200 Hz a 5 kHz (que errava até 3 dB). */
+function irLoudDb(s) {
+  const N = 8192, re = new Float64Array(N), im = new Float64Array(N);
+  for (let i = 0; i < Math.min(s.length, N); i++) re[i] = s[i];
+  fft(re, im); let acc = 0;
+  for (let k = 1; k < N / 2; k++) {
+    const f = k * 48000 / N; if (f < 60 || f > 12000) continue;
+    const shelf = Math.pow(10, (4 / 20) / (1 + Math.pow(1681.97 / f, 2))), hp = 1 / Math.sqrt(1 + Math.pow(38.13 / f, 4)), pink = 1 / Math.max(f, 20);
+    acc += (re[k] * re[k] + im[k] * im[k]) * pink * shelf * shelf * hp * hp;
+  }
+  return 10 * Math.log10(acc + 1e-30);
+}
+const lvlOf = (r) => r._loud ?? (r._loud = irLoudDb(r.s));
 
 /* Kit sugerido para os 8 slots, escolhido por medição das IRs da pasta Irs (ver README no chat):
    só IRs que mantêm >=93% da energia nos 512 pontos e perdem pouco timbre no corte, sem cópias,
@@ -1348,7 +1373,9 @@ function integrate(msList) {
 }
 /* escala do knob de volume: medida no seu pedal (pontos v → dB) ou, sem medida, estimativa de amplitude linear */
 let volScale = store.get('volScale', null);
-const volToDbDefault = (v) => 20 * Math.log10(Math.max(v, 1) / 127);
+/* Curva do volume do preset medida no seu pedal (25/10/2026, saída USB, 5 pontos): -0,00145 · (127 - v)². Perto do máximo quase
+   não muda nada (110 → 127 = 0,4 dB); é na metade de baixo que o volume pesa (50 = -8,6 dB). */
+const volToDbDefault = (v) => -0.00145 * Math.pow(127 - Math.max(0, Math.min(127, v)), 2);
 function volToDb(v) {
   const P = volScale; if (!P || P.length < 2) return volToDbDefault(v);
   const seg = (a, b) => a.db + (v - a.v) * (b.db - a.db) / (b.v - a.v);
@@ -1364,12 +1391,14 @@ const irDelta = (a, b) => (irOff && irOff[a] != null && irOff[b] != null) ? irOf
 /* planos (funções puras, conferidas no autoteste) */
 function planLevel(meas, vols, boost) {
   // meas: LUFS medidos de A, B, C (null = não medida). A e B no mesmo nível; C = +boost dB.
-  const ref = [meas[0], meas[1]].filter(x => x != null);
-  const base = ref.length ? ref.reduce((a, b) => a + b, 0) / ref.length : (meas[2] != null ? meas[2] - boost : null);
-  if (base == null) return [null, null, null];
+  // O volume só desce a partir de 127: o nível-alvo é o mais alto que TODAS as partes alcançam sem passar de 127.
+  const mx = meas.map((m, i) => m == null ? null : m - volToDb(vols[i]));          // nível de cada parte com o volume em 127
+  const cand = [mx[0], mx[1], mx[2] == null ? null : mx[2] - boost].filter(x => x != null);
+  if (!cand.length) return [null, null, null];
+  const T = Math.min(...cand);
   return meas.map((m, i) => {
     if (m == null) return null;
-    const delta = base + (i === 2 ? boost : 0) - m, want = volToDb(vols[i]) + delta, to = dbToVol(want);
+    const delta = T + (i === 2 ? boost : 0) - m, want = volToDb(vols[i]) + delta, to = dbToVol(want);
     return { slot:i, from:vols[i], to, delta, clamped:Math.abs(volToDb(to) - want) > 0.75 };
   });
 }
@@ -1400,28 +1429,64 @@ async function meterStart() {
   const hp = M.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 38.13; hp.Q.value = 0.5;
   M.an = M.ctx.createAnalyser(); M.an.fftSize = 4096; M.buf = new Float32Array(M.an.fftSize);
   src.connect(hs); hs.connect(hp); hp.connect(M.an);
+  M.series = [];
   M.tm = setInterval(() => {
     M.an.getFloatTimeDomainData(M.buf); let s = 0; for (const x of M.buf) s += x * x;
-    M.blocks.push({ t:performance.now(), ms:s / M.buf.length }); if (M.blocks.length > 3000) M.blocks.splice(0, 1000);
-    const recent = M.blocks.filter(b => b.t > performance.now() - 3000).map(b => b.ms);
+    const now = performance.now();
+    M.blocks.push({ t:now, ms:s / M.buf.length }); if (M.blocks.length > 3000) M.blocks.splice(0, 1000);
+    const recent = M.blocks.filter(b => b.t > now - 1000).map(b => b.ms);   // último segundo
     const st = recent.length ? blockLufs(recent.reduce((a, b) => a + b, 0) / recent.length) : -99;
     $('#lvNow').textContent = st > -90 ? st.toFixed(1) + ' LUFS' : '— LUFS';
     $('#lvBar').style.width = Math.max(0, Math.min(100, (st + 60) / 60 * 100)) + '%';
+    M.series.push({ t:now, v:st }); while (M.series.length && M.series[0].t < now - 30000) M.series.shift();
+    drawChart();
   }, M.an.fftSize / M.ctx.sampleRate * 1000);
   store.set('lvDev', id); await meterDevices();
   $('#lvStart').textContent = 'Medidor ligado ✓'; updLevelUi();
 }
+/* gráfico dos últimos 30 s (volume de cada segundo): dá para ver se o toque está constante e o efeito de cada mudança */
+function drawChart() {
+  const c = $('#lvChart'); if (!c || !c.getContext) return; const g = c.getContext('2d'), W = c.width, H = c.height, now = performance.now();
+  g.clearRect(0, 0, W, H); g.font = '10px system-ui'; g.fillStyle = '#6f6a62'; g.strokeStyle = '#2b2d34';
+  const y = (v) => H - (Math.max(-60, Math.min(-5, v)) + 60) / 55 * H;
+  for (const v of [-50, -40, -30, -20, -10]) { g.beginPath(); g.moveTo(0, y(v)); g.lineTo(W, y(v)); g.stroke(); g.fillText(v, 2, y(v) - 2); }
+  g.strokeStyle = '#d4b06a'; g.lineWidth = 2; g.beginPath(); let started = false;
+  for (const p of (M.series || [])) { const x = W - (now - p.t) / 30000 * W; if (p.v < -70) { started = false; continue; } started ? g.lineTo(x, y(p.v)) : g.moveTo(x, y(p.v)); started = true; }
+  g.stroke(); g.lineWidth = 1; g.strokeStyle = '#a996d9'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(0, y(PLAY_MIN)); g.lineTo(W, y(PLAY_MIN)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#a996d9'; g.fillText('abaixo disto = não tocou', W - 120, y(PLAY_MIN) - 3);
+}
 function meterStop() { clearInterval(M.tm); M.tm = null; try { M.stream && M.stream.getTracks().forEach(t => t.stop()); M.ctx && M.ctx.close(); } catch {} M.stream = M.ctx = null; M.blocks = []; }
-/* mede durante "secs" segundos, ignorando os primeiros "skip" (para o som assentar depois de uma troca) */
+/* mede durante "secs" segundos, ignorando os primeiros "skip" (para o som assentar depois de uma troca).
+   Devolve {L, played, spread}: volume, fração do tempo com som e variação (dB) entre janelas de 1 s. */
 function captureLufs(secs, skip = 0.5, onTick) {
   return new Promise((res, rej) => {
     if (!M.tm) return rej(new Error('ligue o medidor primeiro'));
     const t0 = performance.now(), from = t0 + skip * 1000, to = t0 + secs * 1000;
     const iv = setInterval(() => {
       const now = performance.now(); onTick && onTick(Math.max(0, (to - now) / 1000));
-      if (now >= to) { clearInterval(iv); res(integrate(M.blocks.filter(b => b.t >= from && b.t <= to).map(b => b.ms))); }
+      if (now >= to) { clearInterval(iv); res(summarize(M.blocks.filter(b => b.t >= from && b.t <= to))); }
     }, 100);
   });
+}
+const PLAY_MIN = -45;   // abaixo disso consideramos que não foi tocado
+function summarize(bl) {
+  const L = integrate(bl.map(b => b.ms));
+  const played = bl.length ? bl.filter(b => blockLufs(b.ms) > PLAY_MIN).length / bl.length : 0;
+  const win = {}; for (const b of bl) (win[Math.floor(b.t / 1000)] ||= []).push(b.ms);
+  const ws = Object.values(win).filter(a => a.length >= 6).map(a => integrate(a)).filter(x => x != null && x > PLAY_MIN);
+  return { L, played, spread: ws.length >= 2 ? Math.max(...ws) - Math.min(...ws) : 0 };
+}
+/* recusa medidas que não valem: sem som, ou com o toque variando demais */
+function qualify(r, what) {
+  if (r.L == null || r.L < PLAY_MIN || r.played < 0.5) throw new Error(`quase não ouvi som em “${what}” (${r.L == null ? 'silêncio' : r.L.toFixed(0) + ' LUFS'}). Toque acordes contínuos e confira se pisou na letra certa no pedal.`);
+  if (r.spread > 6) throw new Error(`o volume variou ${r.spread.toFixed(0)} dB durante “${what}”. Toque de forma mais constante (acordes iguais, mesma força) e meça de novo.`);
+  return r;
+}
+/* a escala do knob só vale se o volume maior soa mais alto (senão o toque variou ou a saída USB ignora o knob) */
+function validScale(pts) {
+  const s = pts.slice().sort((a, b) => a.v - b.v);
+  const mono = s.every((p, i) => i === 0 || p.L >= s[i - 1].L - 0.5), span = s[s.length - 1].L - s[0].L;
+  return { ok:mono && span >= 2 && span <= 20, mono, span };
 }
 
 /* janela "Nivelar volume" */
@@ -1434,27 +1499,39 @@ function updLevelUi() {
   if (!dev) return;
   const vols = [0, 1, 2].map(s => devPart(s)[K.volume.id]);
   const plan = planLevel(lvMeas, vols, +$('#lvBoost').value);
-  $('#lvParts').innerHTML = SLOT.map((n, i) => { const p = plan[i]; return `<div class="lvp" style="--bc:${PART[n].col}"><b class="l">${n}</b><span>${esc(partName(i))}<br><small class="muted">${esc(PART[n].fn)} · volume ${vols[i]}</small></span><span class="r">${lvMeas[i] != null ? lvMeas[i].toFixed(1) + ' LUFS' + (p ? `<br>${p.delta >= 0 ? '+' : ''}${p.delta.toFixed(1)} dB → vol ${p.to}${p.clamped ? ' (no limite)' : ''}` : '') : '—'}</span><button data-m="${i}">Medir</button></div>`; }).join('');
-  $('#lvApply').disabled = !plan.some(Boolean);
+  $('#lvParts').innerHTML = SLOT.map((n, i) => { const p = plan[i]; return `<div class="lvp" style="--bc:${PART[n].col}"><b class="l">${n}</b><span>${esc(partName(i))}<br><small class="muted">${esc(PART[n].fn)} · volume ${vols[i]}</small></span><span class="r"><input class="lvin" type="text" inputmode="decimal" data-i="${i}" value="${lvMeas[i] != null ? lvMeas[i].toFixed(1) : ''}" placeholder="LUFS" title="Digite o volume medido (ex.: -27,7) ou use Medir">${lvMeas[i] != null ? ' LUFS' + (lvMeasWarn[i] ? `<br><span class="warn">⚠ ${lvMeasWarn[i]}</span>` : '') + (p ? `<br>${Math.abs(p.delta) > BIG_GAP ? '<span class="warn">⚠ ' : ''}${p.delta >= 0 ? '+' : ''}${p.delta.toFixed(1)} dB → vol ${p.to}${p.clamped ? ' (no limite)' : ''}${Math.abs(p.delta) > BIG_GAP ? '</span>' : ''}` : '') : '—'}</span><button data-m="${i}">Medir</button></div>`; }).join('');
+  $('#lvApply').disabled = !plan.some(Boolean) || plan.some(p => p && Math.abs(p.delta) > BIG_GAP);
   $('#lvScaleRes').textContent = volScale ? 'medida: ' + volScale.map(p => p.v + ' → ' + p.db.toFixed(1) + ' dB').join(' · ') : 'ainda não medida (usando estimativa)';
   $('#lvIrApply').disabled = !irOff;
 }
 $('#lvBoost').onchange = updLevelUi;
+const wait = (ms) => new Promise(r => setTimeout(r, ms));
+async function countdown(btn, label, n = 3) { for (let s = n; s > 0; s--) { btn.textContent = `${label} ${s}…`; await wait(1000); } }
+let lvMeasWarn = [null, null, null];
+/* também dá para digitar o LUFS de uma parte (medido em outro teste) em vez de medir */
+$('#lvParts').onchange = (e) => {
+  const inp = e.target.closest('.lvin'); if (!inp) return; const i = +inp.dataset.i, v = parseFloat(String(inp.value).replace(',', '.'));
+  lvMeas[i] = Number.isFinite(v) && v < -5 && v > -60 ? v : null; lvMeasWarn[i] = null; updLevelUi();
+};
 $('#lvParts').onclick = async (e) => {
   const b = e.target.closest('[data-m]'); if (!b) return; const i = +b.dataset.m;
+  if (!M.tm) return toast('Ligue o medidor primeiro (botão no topo)', true);
   if (i !== target) loadSlot(i);
   try {
-    b.disabled = true; toast(`Pise ${SLOT[i]} no pedal e toque a parte “${partName(i)}”`);
-    const L = await captureLufs(8, 0.8, (s) => b.textContent = s > 0 ? 'tocando… ' + Math.ceil(s) : '…');
-    if (L == null) throw new Error('não ouvi som: confira a entrada de áudio e toque um pouco mais forte');
-    lvMeas[i] = L;
-  } catch (err) { toast(err.message, true); }
+    b.disabled = true;
+    await countdown(b, `pise ${SLOT[i]} no pedal`);
+    const r = qualify(await captureLufs(8, 0.8, (s) => b.textContent = s > 0 ? `toque! ${Math.ceil(s)}` : '…'), 'parte ' + SLOT[i]);
+    lvMeas[i] = r.L; lvMeasWarn[i] = r.spread > 4 ? `variou ${r.spread.toFixed(0)} dB` : null;
+  } catch (err) { lvMeas[i] = null; toast(err.message, true); }
   b.disabled = false; b.textContent = 'Medir'; updLevelUi();
 };
+const BIG_GAP = 9;   // dB: diferença maior que isso entre partes quase sempre é medida errada (não pisou na letra, ou não tocou igual)
 $('#lvApply').onclick = async () => {
   const vols = [0, 1, 2].map(s => devPart(s)[K.volume.id]);
   const plan = planLevel(lvMeas, vols, +$('#lvBoost').value).filter(Boolean);
   if (!plan.length || !dev) return;
+  const big = plan.find(p => Math.abs(p.delta) > BIG_GAP);
+  if (big) return toast(`A parte ${SLOT[big.slot]} pediria ${big.delta >= 0 ? '+' : ''}${big.delta.toFixed(0)} dB: grande demais para ser real. Provavelmente não pisou na letra certa ou tocou diferente. Meça de novo.`, true);
   pushBackup();
   for (const p of plan) dev[16 * p.slot + K.volume.id] = p.to;
   loadSlot(target);
@@ -1465,35 +1542,104 @@ $('#lvApply').onclick = async () => {
   if (ok) toast('Volumes aplicados: ' + plan.map(p => SLOT[p.slot] + ' ' + p.from + '→' + p.to).join(' · ') + '. Meça de novo para conferir.');
 };
 $('#lvScale').onclick = async () => {
+  if (!M.tm) return toast('Ligue o medidor primeiro (botão no topo)', true);
   const b = $('#lvScale'), k = K.volume.id, keep = cur.v[k], pts = [];
   try {
     b.disabled = true; pushHist();
+    await countdown(b, `pise ${SLOT[target]} e prepare os acordes`, 3);
     for (const v of [120, 100, 80, 60]) {
       setVal(k, v); knobs[k]?.draw();
-      const L = await captureLufs(3.4, 0.8, (s) => b.textContent = `volume ${v}… ${Math.ceil(s)}`);
-      if (L == null) throw new Error('não ouvi som no volume ' + v);
-      pts.push({ v, L });
+      pts.push({ v, ...qualify(await captureLufs(5.5, 1.2, (s) => b.textContent = `volume ${v}… ${Math.ceil(s)}`), 'volume ' + v) });
     }
-    const ref = pts[0].L - volToDbDefault(120);   // só as diferenças importam; ancora o 120 na estimativa
+    const chk = validScale(pts);
+    $('#lvScaleRes').textContent = 'medido: ' + pts.map(p => `${p.v} → ${p.L.toFixed(1)} LUFS`).join(' · ');
+    if (!chk.ok) throw new Error(chk.mono ? `a diferença entre volume 60 e 120 deu só ${chk.span.toFixed(1)} dB: a saída USB do pedal parece não depender do knob de volume. Mantive a estimativa.` : 'o volume maior soou mais baixo que o menor: o toque variou. Toque acordes iguais, com a mesma força, e meça de novo. Mantive a estimativa.');
+    const ref = pts.find(p => p.v === 120).L - volToDbDefault(120);   // só as diferenças importam; ancora o 120 na estimativa
     volScale = pts.map(p => ({ v:p.v, db:p.L - ref })).sort((a, c) => a.v - c.v); store.set('volScale', volScale);
     toast('Escala do volume medida');
   } catch (err) { toast(err.message, true); }
   setVal(k, keep); knobs[k]?.draw(); b.disabled = false; b.textContent = 'Medir escala'; updLevelUi();
+  if (!volScale) $('#lvScaleRes').textContent += ' · sem escala válida (usando estimativa)';
+};
+/* ---- medição automática por rodadas alternadas ----
+   O app copia ao vivo (sem gravar) os parâmetros de cada letra para a letra A, alterna em várias rodadas de ordem diferente
+   e compara DENTRO de cada rodada: a variação do toque (±3 dB e deriva ao longo do teste) atinge todas igualmente e se cancela.
+   Funções puras, com relógio e medidor injetados, para o autoteste simular o pedal. */
+const median = (a) => { const s = a.slice().sort((x, y) => x - y), n = s.length; return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; };
+const stdev = (a) => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / Math.max(1, a.length - 1)); };
+const stderr = (a) => a.length < 2 ? 3 : 1.25 * stdev(a) / Math.sqrt(a.length);   // margem de erro aproximada da mediana
+function momentaryP90(blocks) {   // blocos de ~85 ms; "momentâneo" = 5 blocos (~0,4 s); p90 resiste a pausas e decaimento entre batidas
+  const n = 5, m = []; for (let i = 0; i + n <= blocks.length; i++) { let s = 0; for (let k = 0; k < n; k++) s += blocks[i + k].ms; m.push(blockLufs(s / n)); }
+  if (!m.length) return { p90:null, played:0 };
+  const so = m.slice().sort((a, b) => a - b); return { p90:so[Math.min(so.length - 1, Math.floor(0.9 * so.length))], played:m.filter(x => x > PLAY_MIN).length / m.length };
+}
+const LV_ROUNDS = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [2, 1, 0], [1, 0, 2], [0, 1, 2], [2, 1, 0]];
+const IR_ROUNDS = [[1, 2, 3, 4, 5, 6, 7, 8], [5, 6, 7, 8, 1, 2, 3, 4], [8, 7, 6, 5, 4, 3, 2, 1]];
+async function measureSegments(dep, order, apply, o) {
+  const per = {}; let k = 0, total = order.reduce((a, r) => a + r.length, 0);
+  for (let r = 0; r < order.length; r++) for (const id of order[r]) {
+    if (dep.aborted()) throw new Error('interrompido');
+    await dep.send(apply(id)); const t0 = dep.now(); dep.progress(++k, total);
+    await dep.sleep(o.seg * 1000);
+    const m = momentaryP90(dep.blocks(t0 + o.skip * 1000, t0 + (o.seg - 0.2) * 1000));
+    if (m.p90 == null || m.played < 0.35) throw new Error(`quase não ouvi som na medição ${k} de ${total}. Toque o tempo todo, o mesmo acorde, e confira se o pedal está na letra A.`);
+    (per[id] ||= []).push(m.p90);
+  }
+  return per;
+}
+async function autoLevelRun(dep, sets, o = { seg:6, skip:2.3 }) {
+  const per = await measureSegments(dep, LV_ROUNDS, (s) => { const p = sets[s].map((v, i) => [i, v]); p.sid = s; return p; }, o);
+  const diff = (s) => per[s].map((v, i) => v - per[0][i]);        // dentro da rodada: o som s menos o som A
+  const BA = diff(1), CA = diff(2), A = median(per[0]);
+  return { A, BA:{ med:median(BA), se:stderr(BA) }, CA:{ med:median(CA), se:stderr(CA) }, per };
+}
+async function irMeasureRun(dep, o = { seg:5, skip:2.0 }) {
+  const per = await measureSegments(dep, IR_ROUNDS, (n) => [[K.ircab.id, n]], o), ids = Object.keys(per).map(Number), R = IR_ROUNDS.length;
+  const mean = Array.from({ length:R }, (_, r) => ids.reduce((a, n) => a + per[n][r], 0) / ids.length);    // média de cada rodada = deriva do toque
+  const rel = {}; for (const n of ids) rel[n] = per[n].map((v, r) => v - mean[r]);
+  const med = Object.fromEntries(ids.map(n => [n, median(rel[n])])), c = median(Object.values(med));
+  return { off:Object.fromEntries(ids.map(n => [n, med[n] - c])), se:Object.fromEntries(ids.map(n => [n, stderr(rel[n])])) };
+}
+let lvAbort = false;
+function liveDep(btn, label) {
+  return {
+    aborted: () => lvAbort, progress: (k, n) => { btn.textContent = `${label} ${k}/${n}…`; },
+    send: (pairs) => sendSeq(pairs.map(([i, v]) => Cube.paramMsg(i, v))),   // slot A: índices 0..15
+    now: () => performance.now(), sleep: (ms) => new Promise(r => setTimeout(r, ms)), blocks: (a, b) => M.blocks.filter(x => x.t >= a && x.t <= b),
+  };
+}
+async function withRun(btn, label, fn) {
+  if (!M.tm) return toast('Ligue o medidor primeiro (botão no topo)', true);
+  if (demo || !out) return toast('Conecte ao pedal para medir', true);
+  const orig = dev.slice(0, 16), stop = $('#lvStop'); lvAbort = false; btn.disabled = true; stop.hidden = false;
+  let wake = null; try { wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch {}
+  try {
+    await countdown(btn, 'prepare-se, comece a tocar em', 6);
+    return await fn(liveDep(btn, label));
+  } catch (err) { toast(err.message, !/interrompido/.test(err.message)); }
+  finally {
+    try { await sendSeq(orig.map((v, i) => Cube.paramMsg(i, v))); } catch {}      // devolve a letra A ao que estava
+    stop.hidden = true; btn.disabled = false; try { wake && wake.release(); } catch {}
+  }
+}
+$('#lvStop').onclick = () => { lvAbort = true; };
+$('#lvAuto').onclick = async () => {
+  const btn = $('#lvAuto'), sets = [0, 1, 2].map(s => Object.assign(dev.slice(16 * s, 16 * s + 13), { sid:s }));
+  const r = await withRun(btn, 'medindo', (dep) => autoLevelRun(dep, sets));
+  btn.textContent = '▶ Medir A, B e C automaticamente';
+  if (!r) return;
+  lvMeas = [r.A, r.A + r.BA.med, r.A + r.CA.med]; lvMeasWarn = [null, r.BA.se > 1.8 ? `±${r.BA.se.toFixed(1)} dB` : null, r.CA.se > 1.8 ? `±${r.CA.se.toFixed(1)} dB` : null];
+  $('#lvAutoNote').innerHTML = `B vs A: <b>${r.BA.med >= 0 ? '+' : ''}${r.BA.med.toFixed(1)}</b> ± ${r.BA.se.toFixed(1)} dB · C vs A: <b>${r.CA.med >= 0 ? '+' : ''}${r.CA.med.toFixed(1)}</b> ± ${r.CA.se.toFixed(1)} dB (${LV_ROUNDS.length} rodadas). ${Math.max(r.BA.se, r.CA.se) > 1.8 ? '<span class="warn">Margem alta: toque mais constante e meça de novo antes de aplicar.</span>' : 'Confira o plano abaixo e clique em Aplicar.'}`;
+  updLevelUi();
 };
 $('#lvIrs').onclick = async () => {
-  const b = $('#lvIrs'), k = K.ircab.id, keep = cur.v[k], res = {};
-  try {
-    b.disabled = true; pushHist();
-    for (let n = 1; n <= 8; n++) {
-      setVal(k, n); renderIrs();
-      const L = await captureLufs(3.5, 0.9, (s) => b.textContent = `IR ${n}… ${Math.ceil(s)}`);
-      if (L == null) throw new Error('não ouvi som na IR ' + n);
-      res[n] = L;
-    }
-    const v = Object.values(res).sort((a, c) => a - c), med = (v[3] + v[4]) / 2;
-    irOff = Object.fromEntries(Object.entries(res).map(([n, L]) => [n, L - med])); store.set('irOff', irOff);
-  } catch (err) { toast(err.message, true); }
-  setVal(k, keep); b.disabled = false; b.textContent = 'Medir as 8 IRs'; renderIrs(); updLevelUi(); renderIrResult();
+  const btn = $('#lvIrs'), k = K.ircab.id, sw = dev[10];
+  const r = await withRun(btn, 'medindo IRs', async (dep) => { await dep.send([[10, 1]]); return irMeasureRun(dep); });
+  btn.textContent = 'Medir as 8 IRs';
+  if (!r) return;
+  irOff = r.off; store.set('irOff', irOff);
+  toast('IRs medidas (margem de erro ' + (Math.max(...Object.values(r.se))).toFixed(1) + ' dB no pior caso)');
+  renderIrs(); updLevelUi(); renderIrResult();
 };
 function renderIrResult() {
   $('#lvIrRes').innerHTML = !irOff ? '' : '<table>' + Object.entries(irOff).map(([n, d]) => `<tr><td>IR ${n}</td><td>${esc(irShort(+n))}</td><td style="text-align:right">${d >= 0 ? '+' : ''}${d.toFixed(1)} dB</td></tr>`).join('') + '</table>';
@@ -1696,7 +1842,7 @@ if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
   }
   if (location.hash === '#metertest') (async () => {   // só para teste com o microfone falso do Chrome
     let r;
-    try { await meterDevices(); await meterStart(); const a = await captureLufs(2.5, 0.5); const b = await captureLufs(2.5, 0.5); r = `ok entradas=${$('#lvDev').options.length} medida1=${a?.toFixed(2)} medida2=${b?.toFixed(2)} agora=${$('#lvNow').textContent}`; }
+    try { await meterDevices(); await meterStart(); const a = await captureLufs(2.5, 0.5); const b = await captureLufs(2.5, 0.5); r = `ok entradas=${$('#lvDev').options.length} medida1=${a.L?.toFixed(2)} (tocou ${(a.played * 100).toFixed(0)}%, variou ${a.spread.toFixed(1)} dB) medida2=${b.L?.toFixed(2)} agora=${$('#lvNow').textContent} gráfico=${M.series.length}pts`; }
     catch (e) { r = 'erro ' + e.name + ': ' + e.message; }
     meterStop(); fetch('/__result', { method:'POST', body:r + '\nDONE\n--LOG--\n' });
   })();
@@ -1755,17 +1901,69 @@ if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
         document.querySelector('#qirs .qir[data-ir="8"]').click(); ok('trocar IR pelos controles rápidos', cur.v[K.ircab.id] === 8);
         setView('edit'); ok('navegação: Ajustar', document.body.dataset.v === 'edit'); setView('play'); ok('navegação: Tocar', document.body.dataset.v === 'play');
         loadSlot(0); }
+      // as medidas ruins da sua imagem (silêncio nas partes B e C, escala fora de ordem) precisam ser recusadas
+      { const T = 1e6, blk = (db, sec, t0 = T) => Array.from({ length:Math.round(sec * 12) }, (_, i) => ({ t:t0 + i * 83, ms:Math.pow(10, (db + 0.691) / 10) }));
+        const steady = summarize(blk(-20, 6)), quiet = summarize(blk(-60, 6)), mixed = summarize([...blk(-18, 3), ...blk(-33, 3, T + 3000)]);
+        ok('medida: toque constante é aceito', Math.abs(steady.L + 20) < 0.1 && steady.played === 1 && steady.spread < 0.5 && qualify(steady, 'x') === steady);
+        let e1 = ''; try { qualify(quiet, 'parte B'); } catch (e) { e1 = e.message; }
+        ok('medida: silêncio (−60 LUFS) é recusado', /quase não ouvi som/.test(e1));
+        let e2 = ''; try { qualify(summarize(blk(-52, 6)), 'parte C'); } catch (e) { e2 = e.message; } ok('medida: ruído de fundo (−52 LUFS) é recusado', /quase não ouvi som/.test(e2));
+        ok('medida: toque suave (−40 LUFS) passa, mas a diferença para a parte A é pega pelo limite de 9 dB', qualify(summarize(blk(-40, 6)), 'x').L < -39 && planLevel([-14.2, -39.8, -39.8], [104, 98, 110], 2).some(p => Math.abs(p.delta) > BIG_GAP));
+        let e3 = ''; try { qualify(mixed, 'parte A'); } catch (e) { e3 = e.message; } ok('medida: volume variando 15 dB é recusado', /variou/.test(e3) && mixed.spread > 12);
+        ok('escala: a da sua imagem (100 mais baixo que 60) é inválida', validScale([{ v:60, L:-7.1 }, { v:80, L:-3.4 }, { v:100, L:-9.7 }, { v:120, L:-0.5 }]).ok === false);
+        ok('escala: crescente com 6 dB entre 60 e 120 é válida', validScale([{ v:60, L:-12 }, { v:80, L:-9 }, { v:100, L:-7 }, { v:120, L:-6 }]).ok === true);
+        ok('escala: sem diferença (saída USB ignora o knob) é inválida', validScale([{ v:60, L:-10 }, { v:80, L:-10.2 }, { v:100, L:-9.9 }, { v:120, L:-10 }]).ok === false);
+        ok('plano da sua primeira imagem (partes −14, −37, −40) passa de 9 dB e seria bloqueado', planLevel([-14.2, -36.9, -39.8], [104, 98, 110], 2).some(p => Math.abs(p.delta) > BIG_GAP)); }
+      // o "Louvor padrão" do app é exatamente o que ficou gravado no pedal depois do nivelamento de 25/10/2026 (lido por MIDI)
+      { const pedal = [[62, 66, 60, 30, 7, 90, 4, 9, 3, 3, 1, 1, 1], [60, 62, 54, 30, 7, 81, 5, 11, 4, 1, 1, 1, 1], [64, 74, 52, 50, 7, 127, 5, 22, 4, 2, 1, 1, 1]];
+        ok('Louvor padrão do app = pedal nivelado (A 90 · B 81 · C 127, o resto igual)', pedal.every((v, s) => v.join() === STYLES[0].parts[s].v.join()));
+        const keep = dev.slice(); pedal.forEach((v, s) => v.forEach((x, i) => dev[16 * s + i] = x));
+        ok('o app reconhece o estilo no pedal (sem "alterado")', styleOnPedal(STYLES[0])); dev.splice(0, dev.length, ...keep); }
+      // medição automática: simula o pedal e o medidor (com relógio virtual) e confere se o método recupera as diferenças reais
+      { const synth = (truth) => {
+          let vt = 0, sel = null, calls = 0; const sent = [];
+          const L = (t) => -22 - 0.03 * t / 1000 + 2.2 * Math.sin(t / 731) + 1.4 * Math.sin(t / 197) + truth(sel);      // deriva de -0,03 dB/s + ruído de toque
+          return { sent, dep: {
+            aborted: () => false, progress: () => {}, now: () => vt, sleep: async (ms) => { vt += ms; },
+            send: async (pairs) => { calls++; sent.push(pairs); sel = pairs.sid != null ? pairs.sid : pairs[0][1]; },
+            blocks: (a, b) => { const o = []; for (let t = a; t <= b; t += 85) o.push({ t, ms:Math.pow(10, (L(t) + 0.691) / 10) }); return o; } }, calls: () => calls };
+        };
+        const vols = [90, 81, 127], base = [0, -3.0, -0.5];   // verdade: B está 3 dB abaixo de A e C 0,5 dB abaixo, com os volumes acima
+        const S = synth((sid) => base[sid]); const sets = [0, 1, 2].map(s => Object.assign(Array(13).fill(0).map((_, i) => i === 5 ? vols[s] : 0), { sid:s }));
+        const r = await autoLevelRun(S.dep, sets, { seg:6, skip:2.3 });
+        ok('medição automática: recupera B vs A (−3,0) dentro de 1 dB mesmo com deriva e ruído', Math.abs(r.BA.med + 3.0) < 1.0);
+        ok('medição automática: recupera C vs A (−0,5) dentro de 1 dB', Math.abs(r.CA.med + 0.5) < 1.0);
+        ok('medição automática: 8 rodadas x 3 sons = 24 trocas de som', S.sent.length === 24 && r.per[0].length === 8 && r.per[1].length === 8 && r.per[2].length === 8);
+        ok('medição automática: cada troca manda os 13 parâmetros da letra A (índices 0 a 12)', S.sent.every(p => p.length === 13 && p.every(([i], k) => i === k)));
+        const pl2 = planLevel([r.A, r.A + r.BA.med, r.A + r.CA.med], [90, 81, 127], 2);
+        ok('medição automática: o plano alcança o alvo (A = B, C = A + 2) com erro < 1,5 dB', (() => { const L = pl2.map((p, i) => [r.A, r.A + r.BA.med, r.A + r.CA.med][i] + (volToDb(p.to) - volToDb([90, 81, 127][i]))); return Math.abs(L[0] - L[1]) < 1.5 && Math.abs(L[2] - L[0] - 2) < 1.5; })());
+        const T = synth((sid) => 0); let e = ''; try { await autoLevelRun({ ...T.dep, blocks: () => [] }, sets); } catch (er) { e = er.message; }
+        ok('medição automática: sem som, para com mensagem clara', /quase não ouvi som/.test(e));
+        let ab = 0; const U = synth((sid) => 0); let e2 = ''; try { await autoLevelRun({ ...U.dep, aborted: () => ++ab > 5 }, sets); } catch (er) { e2 = er.message; }
+        ok('medição automática: o botão Parar interrompe', /interrompido/.test(e2));
+        // IRs: 8 IRs com diferenças conhecidas, 3 rodadas
+        const off = { 1:2.7, 2:-0.4, 3:0.4, 4:-7.1, 5:-3.4, 6:-2.1, 7:4.8, 8:3.8 }, I = synth((n) => off[n]), ri = await irMeasureRun(I.dep, { seg:5, skip:2.0 });
+        const med8 = median(Object.values(off)), worst = Math.max(...Object.keys(off).map(n => Math.abs(ri.off[n] - (off[n] - med8))));
+        ok('medição de IRs: recupera as 8 diferenças com erro máximo < 1,8 dB (3 rodadas)', worst < 1.8);
+        ok('medição de IRs: 24 trocas e centrada na mediana', I.sent.length === 24 && Math.abs(median(Object.values(ri.off))) < 1e-9);
+        ok('medição de IRs: manda só o parâmetro IR Cab (índice 9)', I.sent.every(p => p.length === 1 && p[0][0] === 9)); }
       // nivelamento: medida de volume e planos (sem áudio real)
       { ok('LUFS: valor de um bloco constante', Math.abs(integrate(Array(20).fill(0.5)) - (-0.691 + 10 * Math.log10(0.5))) < 0.01);
         ok('LUFS: ignora o silêncio entre as notas', Math.abs(integrate([...Array(10).fill(0.01), ...Array(10).fill(1e-12)]) - blockLufs(0.01)) < 0.01);
         ok('LUFS: nada tocado = sem medida', integrate(Array(10).fill(1e-12)) === null);
         const keepScale = volScale; volScale = null;
-        ok('escala estimada: 127 = 0 dB, 64 ≈ -6 dB, ida e volta', Math.abs(volToDb(127)) < 0.01 && Math.abs(volToDb(64) + 5.95) < 0.1 && dbToVol(volToDb(90)) === 90);
-        const pl = planLevel([-20, -23, -22], [100, 100, 100], 2);
-        ok('plano: A e B no mesmo nível, C +2 dB acima', Math.abs(pl[0].delta + 1.5) < 1e-9 && Math.abs(pl[1].delta - 1.5) < 1e-9 && Math.abs(pl[2].delta - 2.5) < 1e-9 && pl[0].to < 100 && pl[1].to > 100 && pl[2].to > 100);
-        const pc = planLevel([-20, -20, -26], [100, 100, 120], 2);   // C precisaria de +8 dB: não cabe no knob
-        ok('plano: avisa quando passa do limite do volume', pc[2].clamped === true && pc[2].to === 127 && pc[0].clamped === false);
-        ok('plano: só C medida usa C como referência', planLevel([null, null, -20], [100, 100, 110], 2)[2].delta === 0);
+        // curva medida no pedal: 127 = 0, 110 = -0,4, 90 = -1,9, 70 = -4,4, 50 = -8,6 dB
+        ok('escala medida no pedal: confere os 5 pontos (erro ≤ 0,35 dB)', [[127, 0], [110, -0.4], [90, -1.9], [70, -4.4], [50, -8.6]].every(([v, d]) => Math.abs(volToDb(v) - d) <= 0.35));
+        ok('escala: perto do máximo quase não muda (104 vs 127 < 1 dB), ida e volta', Math.abs(volToDb(104)) < 1 && dbToVol(volToDb(90)) === 90 && dbToVol(volToDb(60)) === 60);
+        // os números reais do seu pedal: A -27,7 · B -24,8 · C -24,8 LUFS com volumes 104, 98, 110
+        const pl = planLevel([-27.7, -24.8, -24.8], [104, 98, 110], 2);
+        ok('plano real: A sobe ao máximo (127) e B desce para ~79', pl[0].to === 127 && Math.abs(pl[1].to - 79) <= 1 && Math.abs(pl[0].delta - 0.77) < 0.1 && Math.abs(pl[1].delta + 2.13) < 0.1);
+        ok('plano real: C fica ~2 dB acima de A (volume ~108)', Math.abs(pl[2].to - 108) <= 1 && Math.abs((-24.8 + pl[2].delta) - (-27.7 + pl[0].delta) - 2) < 1e-9);
+        ok('plano: nenhuma parte passa de 127 e ninguém é "empurrado" acima do máximo', pl.every(p => p.to <= 127 && !p.clamped));
+        const pc = planLevel([-10, -40, -40], [100, 100, 100], 2);   // A precisaria cair 30 dB: não cabe no knob
+        ok('plano: avisa quando passa do limite do volume', pc[0].clamped === true && pc[0].to === 0);
+        const pcs = planLevel([null, null, -20], [100, 100, 110], 2)[2];
+        ok('plano: só C medida vai ao máximo do volume', pcs.to === 127 && Math.abs(pcs.delta - 0.42) < 0.05);
         volScale = [{ v:60, db:-12 }, { v:80, db:-8 }, { v:100, db:-4 }, { v:120, db:-0.5 }];
         ok('escala medida: interpola e extrapola', Math.abs(volToDb(90) + 6) < 1e-9 && Math.abs(volToDb(40) + 16) < 1e-9 && dbToVol(-6) === 90);
         volScale = keepScale;
@@ -1818,7 +2016,9 @@ if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
         ok('envio de IR: guarda nome do slot', slotAssign[3] === 'teste'); delete slotAssign[3]; delete irNames[3]; store.set('slotAssign', slotAssign); store.set('irNames', irNames);
       }
       // nível de IR e kit sugerido
-      { ok('nível de IR: impulso de 0,5 vale -6 dB', Math.abs(irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0)) + 6.02) < 0.1);
+      { ok('volume percebido da IR: dobrar a amplitude soma 6 dB; impulso atrasado = mesmo volume', Math.abs(irLoudDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 1 : 0)) - irLoudDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0)) - 6.02) < 0.1 && Math.abs(irLoudDb(Float32Array.from({ length:512 }, (_, i) => i === 40 ? 0.5 : 0)) - irLoudDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0))) < 0.05);
+        ok('volume percebido da IR: a que concentra grave pesa mais que a de agudo com a mesma amplitude', irLoudDb(Float32Array.from({ length:512 }, (_, i) => Math.sin(i * 2 * Math.PI * 200 / 48000) * Math.exp(-i / 200))) > irLoudDb(Float32Array.from({ length:512 }, (_, i) => Math.sin(i * 2 * Math.PI * 9000 / 48000) * Math.exp(-i / 200))));
+        ok('nível de IR: impulso de 0,5 vale -6 dB', Math.abs(irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0)) + 6.02) < 0.1);
         ok('nível de IR: dobrar a amplitude soma 6 dB', Math.abs(irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 1 : 0)) - irLevelDb(Float32Array.from({ length:512 }, (_, i) => i === 0 ? 0.5 : 0)) - 6.02) < 0.1);
         const sLib = irlib, sAssign = slotAssign, sNames = { ...irNames }, sConfirm = window.confirm;
         irlib = IRKIT.map((k, n) => ({ id:'kit' + n, name:k.name, cat:'x', sub:'', rate:48000, ms:1, en:99, s:Float32Array.from({ length:512 }, (_, i) => (i === 0 ? 0.9 : 0.3 * Math.sin(i * (0.1 + n * 0.07)) * Math.exp(-i / 90)) * (1 + n * 0.4)) }));

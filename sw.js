@@ -1,6 +1,6 @@
 // Service worker do Cube Editor: guarda os arquivos para o app abrir sem internet.
 // Sempre tenta a rede primeiro (para pegar atualizações) e usa a cópia guardada se estiver offline.
-const CACHE = 'cube-editor-v4';
+const CACHE = 'cube-editor-v5';
 const FILES = ['./', './index.html', './core.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', (e) => {
