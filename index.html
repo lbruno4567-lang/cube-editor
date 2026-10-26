@@ -189,6 +189,9 @@
   .lvp b.l { color:var(--bc); font-size:20px; } .lvp .r { font-variant-numeric:tabular-nums; font-size:13px; text-align:right; }
   .lvin { width:64px; text-align:right; padding:5px 6px; font-variant-numeric:tabular-nums; }
   .lv-res { font-size:12.5px; font-variant-numeric:tabular-nums; } .lv-res table { width:100%; border-collapse:collapse; } .lv-res td { padding:3px 4px; border-bottom:1px dashed var(--line); }
+  .savebar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; font-size:13px; }
+  .savestate { font-weight:700; } .savestate.ok { color:var(--acc); } .savestate.warn { color:var(--warn); }
+  .autosw { display:flex; align-items:center; gap:8px; color:var(--dim); cursor:pointer; } .autosw input { width:18px; height:18px; accent-color:var(--acc); }
   .kitbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:12px 14px; border-radius:14px; border:1px solid var(--acc); background:color-mix(in srgb, var(--acc) 9%, var(--s1)); font-size:13px; }
   .kitbar[hidden] { display:none; } .kitbar span { flex:1 1 260px; } .kitbar b { color:var(--acc); }
   .bankhint { color:var(--dim); font-size:12px; margin:8px 2px 10px; } .bankhint b { color:var(--fg); }
@@ -254,7 +257,28 @@
   .st-vol { display:flex; align-items:center; gap:8px; flex:1 1 280px; justify-content:flex-end; }
   .st-vol input { flex:1; max-width:380px; accent-color:var(--acc); height:34px; }
   .st-vol button { font-size:22px; font-weight:800; min-width:52px; padding:10px; } .st-vol b { min-width:2.4em; text-align:right; font-size:20px; }
-  @media (max-width:600px) { .st-hint { display:none; } .st-tg button { flex:1; min-width:0; } }
+  .st-save { font-size:12px; font-weight:700; color:var(--faint); } .st-save.ok { color:var(--acc); } .st-save.warn { color:var(--warn); }
+  @media (max-width:600px) {
+    .st-hint { display:none; } .st-tg button { flex:1; min-width:0; }
+    .stage { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); }
+    .st-top { flex-wrap:nowrap; } .st-top > b { display:none; } .st-top select { flex:1; max-width:none; min-width:0; }
+    /* A B C grandes: letra em cima, nome da parte por baixo (sem cortar) */
+    .st-banks { gap:8px; margin:8px 0 0; }
+    .st-banks button { flex-direction:column; gap:2px; padding:10px 6px 9px; border-radius:16px; }
+    .st-banks button b { font-size:34px; }
+    .st-banks button span { white-space:normal; text-align:center; font-size:13px; line-height:1.15; }
+    /* o que está tocando agora: compacto, numa linha só de informação */
+    .st-now { padding:6px 0 2px; } .st-nowname { font-size:22px; } .st-tag { font-size:12px; min-height:0; }
+    /* estilos em 2 colunas, mais baixos: cabem mais na tela */
+    .st-grid { grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:minmax(74px,auto); gap:8px; padding:6px 0; align-content:start; }
+    .tile { padding:10px 12px; border-radius:16px; border-left-width:6px; font-size:16px; }
+    .tile small { font-size:11px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .tile .num { top:6px; right:9px; font-size:11px; }
+    /* chaves e volume: uma faixa só, polegar alcança */
+    .st-ctl { gap:8px; padding-top:8px; }
+    .st-tg { width:100%; flex-wrap:nowrap; gap:6px; } .st-tg button { padding:9px 4px; font-size:14px; border-radius:12px; } .st-tg button small { max-width:100%; }
+    .st-vol { flex:1 1 100%; } .st-vol input { max-width:none; } .st-vol button { min-width:56px; min-height:48px; }
+  }
 
   /* ---------- Entrada / avisos ---------- */
   .landing { position:fixed; inset:0; z-index:50; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:20px; }
@@ -326,6 +350,7 @@
           </div>
         </div>
         <div class="banks" id="banks"></div>
+        <div class="savebar"><span id="saveState" class="savestate"></span><label class="autosw" title="Cerca de 2,5 segundos depois do último ajuste, o app grava no pedal e confere"><input type="checkbox" id="autosave"> Gravar no pedal automaticamente</label></div>
         <div class="bankhint" id="bankhint"></div>
       </div>
       <div class="quick" id="quick">
@@ -401,7 +426,7 @@
 </div>
 
 <div class="stage" id="stage" hidden>
-  <div class="st-top"><b>Palco</b><select id="st-src" title="Quais caixinhas mostrar"></select><span class="grow"></span><span class="tiny st-hint">A B C = banco do pedal · 1–9 = modo · ← → · Esc sai</span><button id="st-close">✕</button></div>
+  <div class="st-top"><b>Palco</b><select id="st-src" title="Quais caixinhas mostrar"></select><span class="grow"></span><span class="st-save" id="st-save"></span><span class="tiny st-hint">A B C = banco do pedal · 1–9 = modo · ← → · Esc sai</span><button id="st-close">✕</button></div>
   <div class="st-banks" id="st-banks"></div>
   <div class="st-now"><div class="st-nowname" id="st-name"></div><div class="st-tag" id="st-tag"></div></div>
   <div class="st-grid" id="st-grid"></div>
@@ -472,7 +497,7 @@ const vec = (o) => C.map(c => o[c.key]);
 const MOD_OFF = 7, SPACE_OFF = 15;
 const NEUTRAL = { treb:64, mid:64, bass:64, time:30, mod:MOD_OFF, volume:100, antifb:3, space:SPACE_OFF, comp:2, ircab:1, sw1:1, sw2:1, sw3:1 };
 const FACTORY_IR = ['', 'Mart 45 Piezo 3C', 'Acoustic2-Impulse', 'Wurlitzer 1', 'Mart 45 Soundhole 5c', 'Soldano 2inch', 'On Axis grille', 'Taylor 314ce Soundelux', 'Pro Jr floor'];
-const APP_VERSION = 'v5 · nivelamento';
+const APP_VERSION = 'v5.1 · gravação automática';
 /* Os 3 botões do pedal são as 3 PARTES de uma música, sempre com o mesmo papel (o pé decora):
      A = base suave (dedilhado, estrofe) · B = ritmo (levada, refrão) · C = destaque (solo, preenchimento)
    Um ESTILO (louvor, bossa, pregação...) define as 3 partes e é gravado no pedal de uma vez.
@@ -573,6 +598,7 @@ const irText = (p) => {
 let styles = store.get('styles', []);
 let curStyleId = store.get('curStyle', null);
 let pedalBackups = store.get('pedalBackups', []);   // últimos estados do pedal, para "Estilo anterior"
+{ const ov = store.get('styleOv', {}); for (const st of STYLES) if (ov[st.id]) st.parts.forEach((p, s) => { if (ov[st.id][s] && ov[st.id][s].length === p.v.length) p.v.splice(0, p.v.length, ...ov[st.id][s]); }); }
 const allStyles = () => styles.concat(STYLES);
 const findS = (id) => allStyles().find(s => s.id === id);
 const partName = (i) => { const st = findS(curStyleId); return st ? st.parts[i].name : PART[SLOT[i]].fn; };
@@ -627,13 +653,18 @@ function onMsg(ev) {
   if (b.length === 12 && b[0] === 0xf0 && b[2] === 0x32 && b[3] === 0x01 && b[4] === 0x08) return onAck();
   if (!(b.length === 74 && b[3] === 0x0d && b[4] === 0x41 && b[5] === 3)) return;
   let p; try { p = Cube.parseDump(b); } catch (e) { return log('dump inválido: ' + e.message); }
-  const first = !dev;
-  dev = p.data.slice(); devSaved = p.data.slice();
-  selfTestOk = p.checksumOk && Cube.buildDump(dev, Cube.HDR_READ).join() === b.join();
+  const first = !dev, sc = lastSaveCopy; lastSaveCopy = null; clearTimeout(verifyT);
+  if (sc && !first) {
+    // leitura de conferência depois de gravar: o que o pedal devolveu tem que ser o que mandamos
+    if (sc.every((x, i) => x === p.data[i])) { devSaved = p.data.slice(); lastSavedAt = new Date(); adoptPedalIntoStyle(); log('gravação conferida no pedal'); }
+    else { devSaved = p.data.slice(); saveFailed = true; toast('O pedal não confirmou a gravação. As suas mudanças continuam na tela: tente de novo em “Gravar no pedal”.', true); log('conferência da gravação FALHOU'); }
+    // a tela (dev) NÃO é trocada pela leitura: se você continuou mexendo, o último ajuste não se perde
+  } else { dev = p.data.slice(); devSaved = p.data.slice(); }
+  selfTestOk = p.checksumOk && Cube.buildDump(p.data, Cube.HDR_READ).join() === b.join();
   log('dump lido; checksum ' + (p.checksumOk ? 'ok' : 'FALHOU') + '; autoteste ' + (selfTestOk ? 'ok' : 'FALHOU'));
   setStatus('conectado', 'on');
   $('#landing').hidden = true;
-  if (first) loadSlot(target); else { updDevState(); }
+  if (first) loadSlot(target); else { updDevState(); if (sc) renderSlots(); }
 }
 function startDemo() {
   demo = true; selfTestOk = false; dev = new Array(Cube.DATA_LEN).fill(0);
@@ -688,9 +719,36 @@ function setVal(k, v) {
   v = Math.max(0, Math.min(C[k].max, Math.round(v)));
   if (cur.v[k] === v) return false;
   cur.v[k] = v; const idx = 16 * target + C[k].id; dev[idx] = v; queue(idx, v);
-  onChange(); return true;
+  touched(); onChange(); return true;
 }
-function applyAll() { C.forEach((c, k) => { const idx = 16 * target + c.id; dev[idx] = cur.v[k]; queue(idx, cur.v[k]); }); }
+function applyAll() { C.forEach((c, k) => { const idx = 16 * target + c.id; dev[idx] = cur.v[k]; queue(idx, cur.v[k]); }); touched(); }
+
+/* ---- gravação automática no pedal: o ajuste fica salvo mesmo que você esqueça de gravar ----
+   Cerca de AUTOSAVE_MS depois do ÚLTIMO ajuste o app grava no pedal, lê de volta e confere. Se o pedal não confirmar, avisa e
+   mantém a mudança na tela. Também atualiza o estilo da biblioteca (cópia "(ajustado)" se o estilo for de fábrica). */
+let autosaveOn = store.get('autosave', true), AUTOSAVE_MS = 2500, saveTimer = null, savingNow = false, lastSavedAt = null, lvRunning = false, lastBackupAt = 0, lastSaveCopy = null, verifyT = null;
+const isDirty = () => !!(dev && devSaved && dev.some((x, i) => x !== devSaved[i]));
+const opBusy = () => irBusy || lvRunning || savingNow || !!seq;
+let saveFailed = false;   // gravação não confirmada: não insiste sozinho até haver um ajuste novo
+function touched() { clearTimeout(saveTimer); saveTimer = null; saveFailed = false; }   // houve um ajuste novo: reinicia a espera (várias mudanças seguidas viram uma gravação só)
+function scheduleAutosave() { if (saveTimer || saveFailed || lastSaveCopy || savingNow || !autosaveOn || demo || !out || !selfTestOk || !isDirty()) return; saveTimer = setTimeout(() => { saveTimer = null; autoCommit(); }, AUTOSAVE_MS); }
+async function autoCommit() {
+  if (!autosaveOn || demo || !out || !selfTestOk || !isDirty()) return;
+  if (opBusy()) { saveTimer = setTimeout(() => { saveTimer = null; autoCommit(); }, 1500); return; }
+  savingNow = true; updDevState();
+  log('gravação automática: diferenças nos bytes ' + dev.map((x, i) => x !== devSaved[i] ? i + ':' + devSaved[i] + '>' + x : '').filter(Boolean).join(' '));
+  try {
+    if (Date.now() - lastBackupAt > 10 * 60000) { pushBackup(); lastBackupAt = Date.now(); }   // cópia do que estava gravado (no máx. 1 a cada 10 min)
+    await writePedal('automático');
+  } finally { savingNow = false; updDevState(); }
+}
+function adoptPedalIntoStyle() {   // depois de uma gravação conferida: o estilo da biblioteca passa a ter o que está no pedal
+  const st = findS(curStyleId); if (!st || styleOnPedal(st)) return;
+  // o estilo é atualizado no lugar (sem criar cópias); nos de fábrica a versão ajustada fica guardada à parte e vale ao reabrir
+  if (st.tpl) { for (let s = 0; s < 3; s++) st.parts[s].v.splice(0, st.parts[s].v.length, ...devPart(s)); if (!demo) { const ov = store.get('styleOv', {}); ov[st.id] = st.parts.map(p => p.v.slice()); store.set('styleOv', ov); } }
+  else { st.parts.forEach((p, s) => { p.v = devPart(s); }); if (!demo) store.set('styles', styles); }
+  renderSlots();
+}
 function pushHist() { hist.push({ cur:clone(cur), base:base.slice(), baseMeta:clone(baseMeta) }); if (hist.length > 150) hist.shift(); fut = []; updUndo(); }
 let lastH = { k:null, t:0 };
 function histTick(tag) { const n = Date.now(); if (lastH.k !== tag || n - lastH.t > 800) pushHist(); lastH = { k:tag, t:n }; }
@@ -932,8 +990,11 @@ async function writePedal(why) {
   if (!selfTestOk) { toast('Não gravei: a leitura do pedal não passou no autoteste', true); return false; }
   for (let s = 0; s < 3; s++) C.forEach(c => queue(16 * s + c.id, dev[16 * s + c.id]));
   await drainQueue();
+  lastSaveCopy = dev.slice();                         // o que vamos gravar: a leitura de conferência tem que devolver isto
   const msg = Cube.buildDump(dev, Cube.HDR_SAVE); out.send(msg); log('SAVE (' + why + ') enviado');
   setTimeout(() => out && out.send(Cube.REQUEST_PRESETS), 400);
+  clearTimeout(verifyT);
+  verifyT = setTimeout(() => { if (lastSaveCopy) { lastSaveCopy = null; saveFailed = true; toast('O pedal não respondeu à conferência da gravação. Confira se ele está ligado e conectado.', true); updDevState(); } }, 4500);
   return true;
 }
 function pushBackup() {
@@ -1067,9 +1128,17 @@ function onChange() {
   eqRefresh(); updDevState(); updUndo(); renderStageVol(); renderQuick();
 }
 function updDevState() {
-  const dirty = dev && devSaved && dev.some((x, i) => x !== devSaved[i]);
-  $('#devdirty').textContent = demo ? 'demo: nada é enviado' : dirty ? '● mudanças não gravadas no pedal' : '';
+  const dirty = isDirty(), hm = (d) => d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  let txt, cls = '';
+  if (demo) txt = 'demonstração: nada é enviado ao pedal';
+  else if (savingNow) { txt = 'gravando no pedal…'; cls = 'warn'; }
+  else if (dirty) { txt = autosaveOn ? '● gravando no pedal em instantes…' : '● mudanças ainda NÃO gravadas no pedal'; cls = 'warn'; }
+  else { txt = lastSavedAt ? '✓ tudo gravado no pedal · ' + hm(lastSavedAt) : '✓ igual ao que está no pedal'; cls = 'ok'; }
+  $('#devdirty').textContent = demo ? 'demo: nada é enviado' : dirty ? '● não gravado' : '';
+  const ss = $('#saveState'); if (ss) { ss.textContent = txt; ss.className = 'savestate ' + cls; }
+  const sp = $('#st-save'); if (sp) { sp.textContent = demo ? '' : savingNow ? 'gravando…' : dirty ? '● gravando…' : '✓ gravado'; sp.className = 'st-save ' + cls; }
   $('#save').disabled = demo || !selfTestOk || !dirty;
+  scheduleAutosave();
 }
 $('#chain').onclick = (e) => { const b = e.target.closest('button.blk'); if (!b) return; const k = K[b.dataset.k].id; pushHist(); setVal(k, cur.v[k] ? 0 : 1); };
 for (const [sw, key] of [['#sw-ir', 'sw1'], ['#sw-fx', 'sw2'], ['#sw-tone', 'sw3']]) $(sw).onchange = (e) => { pushHist(); setVal(K[key].id, e.target.checked ? 1 : 0); };
@@ -1611,7 +1680,7 @@ function liveDep(btn, label) {
 async function withRun(btn, label, fn) {
   if (!M.tm) return toast('Ligue o medidor primeiro (botão no topo)', true);
   if (demo || !out) return toast('Conecte ao pedal para medir', true);
-  const orig = dev.slice(0, 16), stop = $('#lvStop'); lvAbort = false; btn.disabled = true; stop.hidden = false;
+  const orig = dev.slice(0, 16), stop = $('#lvStop'); lvAbort = false; btn.disabled = true; stop.hidden = false; lvRunning = true;
   let wake = null; try { wake = navigator.wakeLock ? await navigator.wakeLock.request('screen') : null; } catch {}
   try {
     await countdown(btn, 'prepare-se, comece a tocar em', 6);
@@ -1619,7 +1688,8 @@ async function withRun(btn, label, fn) {
   } catch (err) { toast(err.message, !/interrompido/.test(err.message)); }
   finally {
     try { await sendSeq(orig.map((v, i) => Cube.paramMsg(i, v))); } catch {}      // devolve a letra A ao que estava
-    stop.hidden = true; btn.disabled = false; try { wake && wake.release(); } catch {}
+    stop.hidden = true; btn.disabled = false; lvRunning = false; try { wake && wake.release(); } catch {}
+    updDevState();
   }
 }
 $('#lvStop').onclick = () => { lvAbort = true; };
@@ -1793,13 +1863,16 @@ $('#file').onchange = async (e) => {
   } catch { toast('Arquivo inválido', true); }
   e.target.value = '';
 };
-$('#save').onclick = () => {
+$('#save').onclick = async () => {
   if (!selfTestOk || demo) return;
-  if (!confirm('Gravar os slots A, B e C no pedal? Um backup do que está gravado hoje é baixado antes.')) return;
+  if (!confirm('Gravar os slots A, B e C no pedal agora? Um backup do que está gravado hoje é baixado antes.')) return;
   download('cube-backup-pedal-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json', { app:'cube-editor', kind:'device', data:devSaved });
-  const msg = Cube.buildDump(dev, Cube.HDR_SAVE); out.send(msg); log('SAVE enviado (' + msg.length + ' bytes)');
-  setTimeout(() => { out.send(Cube.REQUEST_PRESETS); toast('Gravado; conferindo no pedal…'); }, 400);
+  touched(); savingNow = true; updDevState();
+  try { await writePedal('manual'); toast('Gravando e conferindo no pedal…'); } finally { savingNow = false; updDevState(); }
 };
+$('#autosave').checked = autosaveOn;
+$('#autosave').onchange = (e) => { autosaveOn = e.target.checked; store.set('autosave', autosaveOn); touched(); toast(autosaveOn ? 'Gravação automática ligada: os ajustes vão para o pedal sozinhos' : 'Gravação automática desligada: use “Gravar no pedal” para guardar', !autosaveOn); updDevState(); };
+window.addEventListener('beforeunload', (e) => { if (isDirty() && !demo && out) { e.preventDefault(); e.returnValue = ''; } });
 $('#connect').onclick = connect; $('#demo').onclick = startDemo;
 const toggleLib = (on) => { $('#lib').classList.toggle('open', on); $('#scrim').classList.toggle('open', on); };
 $('#libbtn').onclick = () => toggleLib(!$('#lib').classList.contains('open')); $('#scrim').onclick = () => toggleLib(false);
@@ -1850,6 +1923,7 @@ if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
   if (location.hash === '#selftest') (async () => {
     const r = []; const ok = (n, c) => { r.push((c ? 'PASS ' : 'FAIL ') + n); document.body.dataset.selftest = r.join(' | '); try { fetch('/__result', { method:'POST', body:r.join('\n') + '\n--LOG--\n' + $('#log').textContent }); } catch {} };
     try {
+      autosaveOn = false;   // os testes antigos mexem em valores com um "pedal" falso: a gravação automática só entra nos testes dela, abaixo
       { let acks = 0; const t0 = performance.now(); out = { send:() => { setTimeout(() => { acks++; onAck(); }, 1); } }; demo = false;
         const r0 = await sendSeq(Array.from({ length:10 }, () => [0xf0, 0xf7]), null); out = null; demo = true;
         ok('envio em sequência: 10 mensagens, nenhuma perdida (diag: ' + acks + ' acks, ' + Math.round(performance.now() - t0) + ' ms)', r0.lost === 0 && acks === 10); }
@@ -1881,7 +1955,7 @@ if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
       ok('zonas: mod e space', ZONES.mod.text(7) === 'desligado' && ZONES.mod.text(0).startsWith('chorus 100') && ZONES.mod.text(15).startsWith('trêmolo 100') && ZONES.space.text(15) === 'desligado' && ZONES.space.text(0).startsWith('reverb 100') && ZONES.space.text(31).startsWith('delay 100') && ZONES.space.text(13).startsWith('reverb') && ZONES.space.text(17).startsWith('delay'));
       ok('nenhuma parte de estilo usa chorus', STYLES.every(s => s.parts.every(p => p.v[K.mod.id] >= 7)));
       ok('introdução melancólica usa trêmolo leve', modName(findS('st-intro-melancolica').parts[0].v[K.mod.id]) === 'trêmolo');
-      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+      const sleep = (ms) => new Promise(r => setTimeout(r, ms)), settle = async () => { await sleep(200); for (let i = 0; i < 100 && (saveTimer || savingNow || lastSaveCopy); i++) await sleep(100); await sleep(100); };
       // estilos: A/B/C como partes da música
       { ok('estilos: 8 de fábrica, 3 partes válidas em cada', STYLES.length === 8 && STYLES.every(s => s.parts.length === 3 && s.parts.every(p => p.v.length === 13 && p.v.every((x, k) => Number.isInteger(x) && x >= 0 && x <= C[k].max))));
         ok('estilos: C (destaque) mais alto que A e B em todos', STYLES.every(s => s.parts[2].v[K.volume.id] > s.parts[0].v[K.volume.id] && s.parts[2].v[K.volume.id] > s.parts[1].v[K.volume.id]));
@@ -2030,6 +2104,34 @@ if (/^#(demo|stage|selftest|irtab|metertest)/.test(location.hash)) {
         ok('kit: nomes dos slots e IR de origem guardados', IRKIT.every(k => irNames[k.slot] === k.label && slotAssign[k.slot] === k.name));
         ok('kit: não troca o botão de IR do preset aberto', !kitSent.some(m => m[3] === 9 && m[4] === 0x49 && m[9] >= 0 && m[9] < 16 && m[17] !== undefined && m.length === 21 && m[8] === 2 && m[13] === 0x18));
         irlib = sLib; slotAssign = sAssign; for (const k in irNames) delete irNames[k]; Object.assign(irNames, sNames); store.set('irNames', irNames); store.set('slotAssign', slotAssign); }
+      // gravação automática: pedal simulado que guarda o Save, devolve a leitura e pode "esquecer" a gravação
+      { const sv = { dev:dev.slice(), devSaved:devSaved.slice(), ok:selfTestOk, ms:AUTOSAVE_MS, cs:curStyleId, st:styles.slice() };
+        let mem = dev.slice(), forget = false, saves = 0; const sleep = (ms) => new Promise(r => setTimeout(r, ms)), settle = async () => { await sleep(200); for (let i = 0; i < 100 && (saveTimer || savingNow || lastSaveCopy); i++) await sleep(100); await sleep(100); };
+        const sim = { send:(m) => {
+          if (m.length === 12 || m[4] === 0x49) return;
+          if (m[3] === 0x09 && m[4] === 0x41 && m[5] === 3) { saves++; if (!forget) { const q = m.slice(); q[3] = 0x0d; mem = Cube.parseDump(q).data.slice(); } return; }
+          if (m.join() === Cube.REQUEST_PRESETS.join()) setTimeout(() => onMsg({ data:Cube.buildDump(mem, Cube.HDR_READ) }), 5);
+        } };
+        const ackAll = out0 => { };
+        out = { send:(m) => { sim.send(m); if (m[3] === 0x09 && m[4] === 0x49) setTimeout(onAck, 1); } };
+        demo = false; selfTestOk = true; devSaved = dev.slice(); AUTOSAVE_MS = 80; autosaveOn = true; touched();
+        const vi = 16 * target + K.volume.id, v0 = dev[vi];
+        setVal(K.volume.id, v0 - 7); setVal(K.volume.id, v0 - 9);
+        ok('gravação automática: depois do ajuste o pedal ainda não foi gravado (espera o último ajuste)', saves === 0 && isDirty());
+        await settle();
+        ok('gravação automática: vários ajustes seguidos viram UMA gravação e o pedal guarda o último volume (diag: ' + saves + ' gravações; log: ' + $('#log').textContent.split('\n').slice(0, 14).join(' / ') + ')', saves === 1 && mem[vi] === v0 - 9);
+        ok('gravação automática: conferida, tela e pedal iguais, sem pendência (diag: sujo ' + isDirty() + ', data ' + (lastSavedAt instanceof Date) + ', texto "' + $('#saveState').textContent + '", copia ' + !!lastSaveCopy + ')', !isDirty() && dev[vi] === v0 - 9 && lastSavedAt instanceof Date && /tudo gravado/.test($('#saveState').textContent));
+        forget = true; setVal(K.volume.id, v0 - 20); await settle();
+        ok('gravação automática: se o pedal não confirmar, avisa, mantém o ajuste na tela e não insiste em laço (diag: ' + saves + ')', isDirty() && dev[vi] === v0 - 20 && saveFailed && saves === 2);
+        forget = false; setVal(K.volume.id, v0 - 21); await settle();
+        ok('gravação automática: com um ajuste novo tenta de novo e conclui', !isDirty() && mem[vi] === v0 - 21 && saves === 3);
+        autosaveOn = false; setVal(K.volume.id, v0 - 30); await sleep(400);
+        ok('gravação automática: desligada, nada é gravado sozinho e fica marcado como não gravado', saves === 3 && isDirty() && /NÃO gravadas/.test($('#saveState').textContent));
+        autosaveOn = true; irBusy = true; touched(); setVal(K.volume.id, v0 - 31); await sleep(300);
+        ok('gravação automática: não grava no meio de um envio de IR', saves === 3);
+        irBusy = false; await settle();
+        ok('gravação automática: depois do envio de IR, grava (diag: ' + saves + ')', saves === 4 && mem[vi] === v0 - 31 && !isDirty());
+        out = null; demo = true; autosaveOn = false; AUTOSAVE_MS = sv.ms; selfTestOk = sv.ok; dev = sv.dev; devSaved = sv.devSaved; curStyleId = sv.cs; styles = sv.st; touched(); loadSlot(target); }
       presets = presets.filter(x => x.id !== p.id); setlists = setlists.filter(x => x !== s); persist();
     } catch (err) { r.push('FAIL exceção: ' + err.message); }
     document.body.dataset.selftest = r.join(' | ');
